@@ -1,220 +1,171 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solo Sút Luân Lưu - Đấu Trí</title>
-    <style>
-        :root {
-            --pitch-green: #2e7d32;
-            --goal-white: #ffffff;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            background-color: #1a1a1a;
-            color: white;
-            margin: 0;
-            overflow: hidden;
-        }
-        #game-container {
-            max-width: 800px;
-            margin: 20px auto;
-            position: relative;
-        }
-        /* Khung thành */
-        #goal-area {
-            width: 100%;
-            height: 300px;
-            background: var(--pitch-green);
-            border-bottom: 5px solid white;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-        }
-        .goal-post {
-            width: 500px;
-            height: 200px;
-            border: 8px solid var(--goal-white);
-            border-bottom: none;
-            position: relative;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-        }
-        /* Nút chọn vị trí */
-        .target {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 2px dashed rgba(255,255,255,0.5);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.3s;
-        }
-        .target:hover { background: rgba(255,255,255,0.2); }
-        .target.selected { background: #ffeb3b; border-style: solid; }
-
-        /* Thông tin */
-        #status-board {
-            background: #333;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-        }
-        .score { font-size: 24px; font-weight: bold; }
-        #timer { color: #ff5252; font-size: 20px; font-weight: bold; }
-        
-        #message {
-            height: 50px;
-            font-style: italic;
-            color: #4fc3f7;
-            margin-top: 10px;
-        }
-        .hidden { display: none !important; }
-    </style>
+<meta charset="UTF-8">
+<title>FUTSAL CHIẾN THUẬT 5v5</title>
+<style>
+body{margin:0;background:#022c22;color:#fff;font-family:Arial}
+#ui{padding:8px;text-align:center}
+button,select{padding:6px;margin:4px}
+#game{display:flex;flex-direction:column;height:90vh}
+.half{flex:1;position:relative;border-top:2px solid #fff}
+canvas{background:#0a7a3d;width:100%;height:100%}
+.info{position:absolute;top:5px;left:5px;font-size:12px}
+</style>
 </head>
+
 <body>
 
-<div id="game-container">
-    <h1>🏆 Penalty Shootout Solo</h1>
-    
-    <div id="status-board">
-        <div class="score">
-            P1: <span id="p1-score">0</span> | P2: <span id="p2-score">0</span>
-        </div>
-        <div>Lượt sút: <span id="round-num">1</span>/5</div>
-        <div id="turn-info">Người chơi 1: Chọn hướng sút!</div>
-        <div id="timer"></div>
-    </div>
+<div id="ui">
+  <button onclick="startAI()">Đấu AI</button>
+  <select id="aiLevel">
+    <option value="1">AI Bình thường</option>
+    <option value="2">AI Khá</option>
+    <option value="3">AI Rất tốt</option>
+  </select>
+  <button onclick="startPvP()">Đấu 2 Người</button>
+  <span id="time">90:00</span>
+</div>
 
-    <div id="goal-area">
-        <div class="goal-post">
-            <div class="target" onclick="choose(0)" id="t0">Trái</div>
-            <div class="target" onclick="choose(1)" id="t1">Giữa</div>
-            <div class="target" onclick="choose(2)" id="t2">Phải</div>
-        </div>
-    </div>
-
-    <div id="message"></div>
+<div id="game">
+  <div class="half">
+    <canvas id="c1"></canvas>
+    <div class="info">Người chơi 1</div>
+  </div>
+  <div class="half">
+    <canvas id="c2"></canvas>
+    <div class="info">Người chơi 2 / AI</div>
+  </div>
 </div>
 
 <script>
-    let scores = [0, 0];
-    let attempts = [0, 0];
-    let currentShooter = 0; // 0 là P1, 1 là P2
-    let step = 'shooting'; // shooting -> saving -> waiting
-    let shootDir = null;
-    let saveDir = null;
-    let round = 1;
+const W=400,H=250;
+const c1=document.getElementById("c1");
+const c2=document.getElementById("c2");
+c1.width=c2.width=W;
+c1.height=c2.height=H;
+const g1=c1.getContext("2d");
+const g2=c2.getContext("2d");
 
-    const msgEl = document.getElementById('message');
-    const turnEl = document.getElementById('turn-info');
-    const timerEl = document.getElementById('timer');
+let mode="AI",aiLevel=1;
+let time=90*60,interval;
 
-    const roasts = [
-        "Bạn sút thế này thì thủ môn đứng ngủ cũng cản được!",
-        "Kỹ năng của bạn tỉ lệ nghịch với sự tự tin đấy.",
-        "Bạn nên chuyển sang chơi cờ vây thay vì sút bóng.",
-        "Quả bóng tròn nhưng bạn sút nó thành hình vuông rồi.",
-        "Thủ môn thậm chí không cần nhảy cũng bắt được quả đó!"
-    ];
+const ball={x:200,y:125,vx:0,vy:0,owner:null};
 
-    function choose(dir) {
-        if (step === 'shooting') {
-            shootDir = dir;
-            step = 'saving';
-            turnEl.innerText = `Người chơi ${(currentShooter === 0 ? 2 : 1)}: Chọn hướng CHỤP! (Người sút đã chọn xong)`;
-            clearSelection();
-        } else if (step === 'saving') {
-            saveDir = dir;
-            step = 'waiting';
-            startCountdown();
-        }
+function team(color,gk){
+  return [
+    {x:80,y:60,c:color},{x:80,y:125,c:color},
+    {x:80,y:190,c:color},{x:140,y:125,c:color},
+    {x:30,y:125,c:gk,gk:true}
+  ];
+}
+
+let A=team("red","blue");
+let B=team("white","black");
+
+function draw(ctx){
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle="#fff";
+  ctx.strokeRect(10,10,W-20,H-20);
+  ctx.beginPath();
+  ctx.arc(ball.x,ball.y,5,0,7);
+  ctx.fillStyle="yellow";ctx.fill();
+  [...A,...B].forEach(p=>{
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,8,0,7);
+    ctx.fillStyle=p.c;ctx.fill();
+  });
+}
+
+function update(){
+  ball.x+=ball.vx;
+  ball.y+=ball.vy;
+  ball.vx*=0.98;ball.vy*=0.98;
+
+  if(mode==="AI"){
+    B.forEach(p=>{
+      let dx=ball.x-p.x,dy=ball.y-p.y;
+      let d=Math.hypot(dx,dy);
+      if(d<80){
+        p.x+=dx/d*aiLevel*0.5;
+        p.y+=dy/d*aiLevel*0.5;
+      }
+    });
+  }
+}
+
+function loop(){
+  update();
+  draw(g1);draw(g2);
+}
+
+function tick(){
+  time--;
+  document.getElementById("time").innerText=
+    Math.floor(time/60)+":"+String(time%60).padStart(2,"0");
+  if(time<=0) clearInterval(interval);
+}
+
+function startAI(){
+  mode="AI";
+  aiLevel=document.getElementById("aiLevel").value;
+  start();
+}
+function startPvP(){
+  mode="PVP";
+  start();
+}
+function start(){
+  time=90*60;
+  clearInterval(interval);
+  interval=setInterval(tick,1000);
+}
+
+setInterval(loop,16);
+
+// KÉO CẦU THỦ
+function drag(canvas,team){
+  let sel=null;
+  canvas.onmousedown=e=>{
+    let r=canvas.getBoundingClientRect();
+    let x=(e.clientX-r.left)/r.width*W;
+    let y=(e.clientY-r.top)/r.height*H;
+    team.forEach(p=>{
+      if(Math.hypot(p.x-x,p.y-y)<10) sel=p;
+    });
+  };
+  canvas.onmousemove=e=>{
+    if(sel){
+      let r=canvas.getBoundingClientRect();
+      sel.x=(e.clientX-r.left)/r.width*W;
+      sel.y=(e.clientY-r.top)/r.height*H;
+      ball.x=sel.x;ball.y=sel.y;
     }
+  };
+  canvas.onmouseup=()=>sel=null;
+}
 
-    function clearSelection() {
-        document.querySelectorAll('.target').forEach(t => t.classList.remove('selected'));
+drag(c1,A);
+drag(c2,B);
+
+// CLICK CHUYỀN / SÚT
+let lastClick=0;
+[c1,c2].forEach(cv=>{
+  cv.onclick=e=>{
+    let r=cv.getBoundingClientRect();
+    let x=(e.clientX-r.left)/r.width*W;
+    let y=(e.clientY-r.top)/r.height*H;
+    let now=Date.now();
+    let dx=x-ball.x,dy=y-ball.y;
+    let d=Math.hypot(dx,dy);
+    if(now-lastClick<300){
+      ball.vx=dx/d*6;ball.vy=dy/d*6;
+    }else{
+      ball.vx=dx/d*3;ball.vy=dy/d*3;
     }
-
-    function startCountdown() {
-        let timeLeft = 5;
-        turnEl.innerText = "Đang tính toán kết quả...";
-        
-        const countdown = setInterval(() => {
-            timerEl.innerText = `Kết quả sau: ${timeLeft}s`;
-            timeLeft--;
-            if (timeLeft < 0) {
-                clearInterval(countdown);
-                timerEl.innerText = "";
-                resolveTurn();
-            }
-        }, 1000);
-    }
-
-    function resolveTurn() {
-        const isGoal = shootDir !== saveDir;
-        if (isGoal) {
-            scores[currentShooter]++;
-            msgEl.innerText = "⚽ VÀOOOOO!";
-        } else {
-            msgEl.innerText = "🧤 CẢN PHÁ TUYỆT VỜI!";
-        }
-
-        attempts[currentShooter]++;
-        updateUI();
-
-        // Chuyển lượt hoặc kết thúc
-        setTimeout(() => {
-            checkWinner();
-        }, 2000);
-    }
-
-    function checkWinner() {
-        const p1 = scores[0];
-        const p2 = scores[1];
-        const att1 = attempts[0];
-        const att2 = attempts[1];
-
-        // Luật 5 quả đầu hoặc sút luân lưu (sudden death)
-        if (att1 === att2) {
-            if (att1 >= 5 && p1 !== p2) {
-                endGame(p1 > p2 ? 1 : 2);
-                return;
-            }
-            round++;
-            currentShooter = 0; // Luôn P1 sút trước mỗi lượt
-        } else {
-            currentShooter = 1;
-        }
-
-        step = 'shooting';
-        msgEl.innerText = "";
-        turnEl.innerText = `Người chơi ${currentShooter + 1}: Chọn hướng sút!`;
-        document.getElementById('round-num').innerText = round;
-    }
-
-    function updateUI() {
-        document.getElementById('p1-score').innerText = scores[0];
-        document.getElementById('p2-score').innerText = scores[1];
-    }
-
-    function endGame(winner) {
-        const loser = winner === 1 ? 2 : 1;
-        const roast = roasts[Math.floor(Math.random() * roasts.length)];
-        
-        document.body.innerHTML = `
-            <div style="margin-top: 100px;">
-                <h1>🏆 Người chơi ${winner} CHIẾN THẮNG!</h1>
-                <p style="font-size: 20px; color: #ff5252;">Gửi người chơi ${loser}: ${roast}</p>
-                <button onclick="location.reload()" style="padding: 10px 20px; cursor:pointer;">Chơi lại</button>
-            </div>
-        `;
-    }
+    lastClick=now;
+  };
+});
 </script>
-
 </body>
 </html>
