@@ -3,35 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Futsal Strategy AI - 2 Player</title>
+    <title>Futsal Strategy AI - 2026 Edition</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #222; font-family: sans-serif; }
+        :root { --green: #2e7d32; --gold: #ffd700; }
+        body { margin: 0; overflow: hidden; background: #111; font-family: 'Arial', sans-serif; user-select: none; }
         #game-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
-        canvas { border: 2px solid #fff; box-sizing: border-box; touch-action: none; }
-        #p1-canvas { border-bottom: 2px solid yellow; } /* Màn hình trên */
-        #p2-canvas { border-top: 2px solid yellow; }    /* Màn hình dưới */
-        
-        #ui-layer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                    background: rgba(0,0,0,0.8); color: white; padding: 20px; text-align: center; 
-                    border-radius: 10px; z-index: 10; pointer-events: auto; }
-        .btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; margin: 5px; cursor: pointer; }
-        #scoreboard { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); 
-                      background: rgba(0,0,0,0.5); color: white; padding: 5px; border-radius: 5px; pointer-events: none; }
+        canvas { flex: 1; touch-action: none; background: var(--green); }
+        #p1-canvas { border-bottom: 2px solid var(--gold); }
+
+        /* HUD & UI */
+        #hud { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); z-index: 50; pointer-events: none; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; border: 1px solid var(--gold); }
+        #ui-layer { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        .btn { background: #4CAF50; color: white; padding: 15px 40px; border: none; margin: 10px; font-size: 1.2rem; border-radius: 30px; cursor: pointer; transition: 0.3s; }
+        .btn:hover { background: #45a049; transform: scale(1.05); }
+
+        /* Penalty UI */
+        #penalty-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none; z-index: 200; flex-direction: column; justify-content: space-between; padding: 40px 0; }
+        .penalty-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed #555; }
+        .choice-btns { display: flex; gap: 15px; margin-top: 15px; }
+        .choice-btn { width: 80px; height: 50px; background: #333; color: white; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border-radius: 5px; }
+        .choice-btn.active { background: var(--gold); color: black; }
+        #countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; color: #ff4444; text-shadow: 2px 2px 10px black; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div id="scoreboard">
-    Time: <span id="game-time">00:00</span> | Score: <span id="score">0 - 0</span>
+<div id="hud">
+    <div id="game-time" style="color: var(--gold); font-weight: bold;">TIME: 00:00</div>
+    <div id="score" style="font-size: 24px; color: white;">0 - 0</div>
 </div>
 
 <div id="ui-layer">
-    <h2>FUTSAL STRATEGY</h2>
+    <h1 style="color: var(--gold); letter-spacing: 5px;">FUTSAL TACTIC AI</h1>
     <div id="menu">
-        <button class="btn" onclick="startGame('pve', 1)">Đấu AI (Thường)</button>
-        <button class="btn" onclick="startGame('pve', 2)">Đấu AI (Khá)</button>
-        <button class="btn" onclick="startGame('pve', 3)">Đấu AI (Pro)</button><br>
-        <button class="btn" onclick="startGame('pvp')">Đấu với Bạn (2 Người)</button>
+        <button class="btn" onclick="startGame('pve', 1)">ĐẤU AI (THƯỜNG)</button>
+        <button class="btn" onclick="startGame('pve', 2)">ĐẤU AI (KHÁ)</button>
+        <button class="btn" onclick="startGame('pve', 3)">ĐẤU AI (BẬC THẦY)</button><br>
+        <button class="btn" onclick="startGame('pvp')" style="background: #2196F3;">ĐẤU VỚI BẠN (1 MÁY)</button>
+    </div>
+</div>
+
+<div id="penalty-ui">
+    <div class="penalty-screen" id="p1-penalty-zone">
+        <h3 id="p1-label">NGƯỜI CHƠI 1 (TRÊN)</h3>
+        <div class="choice-btns">
+            <div class="choice-btn" id="p1-L" onclick="selectPenalty(1, 'L')">TRÁI</div>
+            <div class="choice-btn" id="p1-C" onclick="selectPenalty(1, 'C')">GIỮA</div>
+            <div class="choice-btn" id="p1-R" onclick="selectPenalty(1, 'R')">PHẢI</div>
+        </div>
+    </div>
+    <div id="countdown"></div>
+    <div class="penalty-screen" id="p2-penalty-zone">
+        <h3 id="p2-label">NGƯỜI CHƠI 2 (DƯỚI)</h3>
+        <div class="choice-btns">
+            <div class="choice-btn" id="p2-L" onclick="selectPenalty(2, 'L')">TRÁI</div>
+            <div class="choice-btn" id="p2-C" onclick="selectPenalty(2, 'C')">GIỮA</div>
+            <div class="choice-btn" id="p2-R" onclick="selectPenalty(2, 'R')">PHẢI</div>
+        </div>
     </div>
 </div>
 
@@ -41,233 +69,234 @@
 </div>
 
 <script>
-/** * Cấu hình hệ thống Game 
+/** * KHỞI TẠO BIẾN & CẤU HÌNH
  */
-const canvas1 = document.getElementById('p1-canvas');
-const canvas2 = document.getElementById('p2-canvas');
-const ctx1 = canvas1.getContext('2d');
-const ctx2 = canvas2.getContext('2d');
+const c1 = document.getElementById('p1-canvas'), c2 = document.getElementById('p2-canvas');
+const ctx1 = c1.getContext('2d'), ctx2 = c2.getContext('2d');
+let game = {
+    active: false, mode: 'pve', ai: 1, timer: 0,
+    score1: 0, score2: 0,
+    ball: { x: 200, y: 300, vx: 0, vy: 0, r: 7 },
+    team1: [], team2: [],
+    penalties: { active: false, count: 0, p1Choice: null, p2Choice: null, p1Shooting: true }
+};
 
-let gameMode = 'pve'; // pve hoặc pvp
-let aiLevel = 1;
-let isRunning = false;
-let gameTime = 0; // Giây thực tế, quy đổi ra 90p trong game
-let score = { team1: 0, team2: 0 };
-let penaltyMode = false;
-
-// Kích thước sân
-const pitch = { w: 400, h: 600, goalW: 80 };
 function resize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight / 2;
-    canvas1.width = canvas2.width = w;
-    canvas1.height = canvas2.height = h;
+    c1.width = c2.width = window.innerWidth;
+    c1.height = c2.height = window.innerHeight / 2;
 }
-window.addEventListener('resize', resize);
-resize();
+window.onresize = resize; resize();
 
-// Đối tượng cầu thủ và bóng
 class Player {
     constructor(x, y, team, isGK) {
-        this.originX = x; this.originY = y;
-        this.x = x; this.y = y;
-        this.team = team;
-        this.isGK = isGK;
-        this.radius = 12;
-        this.selected = false;
+        this.x = x; this.y = y; this.team = team; this.isGK = isGK;
+        this.r = 14; this.selected = false;
         this.color = team === 1 ? (isGK ? '#0000FF' : '#FF0000') : (isGK ? '#000000' : '#FFFFFF');
     }
     draw(ctx) {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
-        ctx.strokeStyle = this.selected ? 'yellow' : '#333';
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        ctx.shadowBlur = 5; ctx.shadowColor = 'black';
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+        ctx.fillStyle = this.color; ctx.fill();
+        ctx.strokeStyle = this.selected ? 'yellow' : 'white';
+        ctx.lineWidth = 2; ctx.stroke();
+        ctx.shadowBlur = 0;
     }
 }
 
-let ball = { x: 200, y: 300, vx: 0, vy: 0, radius: 7 };
-let team1 = [], team2 = [];
-
-function initPlayers() {
-    team1 = [
-        new Player(200, 550, 1, true), // GK
+function initMatch() {
+    game.timer = 0; game.score1 = 0; game.score2 = 0;
+    game.team1 = [
+        new Player(200, 560, 1, true),
         new Player(100, 450, 1, false), new Player(300, 450, 1, false),
         new Player(150, 350, 1, false), new Player(250, 350, 1, false)
     ];
-    team2 = [
-        new Player(200, 50, 2, true), // GK
+    game.team2 = [
+        new Player(200, 40, 2, true),
         new Player(100, 150, 2, false), new Player(300, 150, 2, false),
         new Player(150, 250, 2, false), new Player(250, 250, 2, false)
     ];
-    ball.x = 200; ball.y = 300; ball.vx = 0; ball.vy = 0;
-}
-
-/** * Logic Điều khiển (Kéo thả, Chuyền, Sút)
- */
-function handleInput(canvas, players, isBottomView) {
-    let lastTap = 0;
-    canvas.addEventListener('mousedown', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        // Xử lý Sút (Double Click)
-        let now = Date.now();
-        if (now - lastTap < 300) {
-            shootBall(mouseX, mouseY);
-            return;
-        }
-        lastTap = now;
-
-        // Chọn cầu thủ để kéo
-        players.forEach(p => {
-            const dist = Math.hypot(p.x - mouseX, p.y - mouseY);
-            if (dist < p.radius * 2) p.selected = true;
-        });
-
-        // Chuyền bóng
-        if (!players.some(p => p.selected)) {
-            passBall(mouseX, mouseY);
-        }
-    });
-
-    canvas.addEventListener('mousemove', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        players.forEach(p => {
-            if (p.selected) {
-                p.x = e.clientX - rect.left;
-                p.y = e.clientY - rect.top;
-            }
-        });
-    });
-
-    canvas.addEventListener('mouseup', () => {
-        players.forEach(p => p.selected = false);
-    });
-}
-
-function passBall(tx, ty) {
-    const angle = Math.atan2(ty - ball.y, tx - ball.x);
-    ball.vx = Math.cos(angle) * 5;
-    ball.vy = Math.sin(angle) * 5;
-}
-
-function shootBall(tx, ty) {
-    const angle = Math.atan2(ty - ball.y, tx - ball.x);
-    ball.vx = Math.cos(angle) * 12;
-    ball.vy = Math.sin(angle) * 12;
-}
-
-/**
- * AI Logic
- */
-function updateAI() {
-    if (gameMode !== 'pve') return;
-    team2.forEach(p => {
-        // Cấp độ 1: Chỉ đứng nhìn
-        // Cấp độ 2: Di chuyển theo bóng
-        if (aiLevel >= 2) {
-            p.x += (ball.x - p.x) * (0.01 * aiLevel);
-            p.y += (ball.y - p.y) * (0.01 * aiLevel);
-        }
-        // Cấp độ 3: Sút khi gần bóng
-        if (aiLevel === 3 && Math.hypot(p.x - ball.x, p.y - ball.y) < 30) {
-            shootBall(200, 600);
-        }
-    });
-}
-
-/**
- * Vòng lặp Game
- */
-function update() {
-    if (!isRunning) return;
-
-    // Di chuyển bóng
-    ball.x += ball.vx;
-    ball.y += ball.vy;
-    ball.vx *= 0.98; ball.vy *= 0.98; // Ma sát
-
-    // Va chạm biên
-    if (ball.x < 0 || ball.x > canvas1.width) ball.vx *= -1;
-    
-    // Ghi bàn
-    if (ball.y < 10 && Math.abs(ball.x - 200) < 40) { score.team1++; resetBall(); }
-    if (ball.y > 590 && Math.abs(ball.x - 200) < 40) { score.team2++; resetBall(); }
-
-    // Cập nhật AI
-    updateAI();
-
-    // Cập nhật UI
-    gameTime += 1/60;
-    const minutes = Math.floor(gameTime * 5); // Tỉ lệ 1s real = 5 phút game
-    document.getElementById('game-time').innerText = `${minutes}:00`;
-    document.getElementById('score').innerText = `${score.team1} - ${score.team2}`;
-
-    if (minutes >= 90) {
-        if (score.team1 === score.team2) startPenalty();
-        else endGame();
-    }
-
-    draw();
-    requestAnimationFrame(update);
+    resetBall();
 }
 
 function resetBall() {
-    ball.x = 200; ball.y = 300; ball.vx = 0; ball.vy = 0;
+    game.ball = { x: 200, y: 300, vx: 0, vy: 0, r: 7 };
 }
 
-function draw() {
-    [ctx1, ctx2].forEach((ctx, i) => {
-        ctx.clearRect(0, 0, canvas1.width, canvas1.height);
-        // Vẽ sân
-        ctx.fillStyle = "#2e7d32";
-        ctx.fillRect(0, 0, canvas1.width, canvas1.height);
-        // Vạch sân
-        ctx.strokeStyle = "white";
-        ctx.strokeRect(10, 10, 380, 580);
-        ctx.strokeRect(160, 0, 80, 20); // Gôn 1
-        ctx.strokeRect(160, 580, 80, 20); // Gôn 2
+/** * ĐIỀU KHIỂN & INPUT 
+ */
+function bindInput(canvas, players) {
+    let lastTap = 0;
+    const getPos = (e) => {
+        const r = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: (t.clientX - r.left) * (400 / canvas.width), y: (t.clientY - r.top) * (600 / (window.innerHeight/2)) };
+    };
 
-        // Vẽ cầu thủ & bóng
-        team1.forEach(p => p.draw(ctx));
-        team2.forEach(p => p.draw(ctx));
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-        ctx.fillStyle = "white";
-        ctx.fill();
-        ctx.stroke();
+    const start = (e) => {
+        const p = getPos(e);
+        let now = Date.now();
+        if (now - lastTap < 250) { kick(p, 14); return; }
+        lastTap = now;
+        players.forEach(pl => { if(Math.hypot(pl.x-p.x, pl.y-p.y) < pl.r*2) pl.selected = true; });
+        if (!players.some(pl => pl.selected)) kick(p, 6);
+    };
+
+    const move = (e) => {
+        const p = getPos(e);
+        players.forEach(pl => { if(pl.selected) { pl.x = p.x; pl.y = p.y; } });
+    };
+
+    const end = () => players.forEach(pl => pl.selected = false);
+
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); start(e); });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); });
+    canvas.addEventListener('touchend', end);
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+}
+
+function kick(pos, power) {
+    const angle = Math.atan2(pos.y - game.ball.y, pos.x - game.ball.x);
+    game.ball.vx = Math.cos(angle) * power;
+    game.ball.vy = Math.sin(angle) * power;
+}
+
+/** * LOGIC AI & VÒNG LẶP 
+ */
+function runAI() {
+    if (game.mode !== 'pve') return;
+    const speed = [0, 0.015, 0.03, 0.06][game.ai];
+    game.team2.forEach(p => {
+        if (!p.isGK) {
+            p.x += (game.ball.x - p.x) * speed;
+            p.y += (game.ball.y - p.y) * speed;
+        }
+        if (game.ai >= 2 && Math.hypot(p.x - game.ball.x, p.y - game.ball.y) < 30) {
+            kick({ x: 200, y: 600 }, 10);
+        }
     });
 }
 
-/**
- * Penalty Mode
+function update() {
+    if (!game.active) return;
+
+    // Thời gian: 90 giây thực tế = 90 phút trong game
+    game.timer += 1/60;
+    let min = Math.floor(game.timer);
+    document.getElementById('game-time').innerText = `TIME: ${min.toString().padStart(2,'0')}:00`;
+    document.getElementById('score').innerText = `${game.score1} - ${game.score2}`;
+
+    if (min >= 90) {
+        game.active = false;
+        if (game.score1 === game.score2) startPenalties();
+        else alert("Trận đấu kết thúc! Tỷ số: " + game.score1 + " - " + game.score2);
+        return;
+    }
+
+    game.ball.x += game.ball.vx; game.ball.y += game.ball.vy;
+    game.ball.vx *= 0.985; game.ball.vy *= 0.985;
+
+    // Va chạm & Ghi bàn
+    if (game.ball.y < 15 && Math.abs(game.ball.x - 200) < 45) { game.score1++; resetBall(); }
+    if (game.ball.y > 585 && Math.abs(game.ball.x - 200) < 45) { game.score2++; resetBall(); }
+    if (game.ball.x < 10 || game.ball.x > 390) game.ball.vx *= -1;
+    if (game.ball.y < 10 || game.ball.y > 590) game.ball.vy *= -1;
+
+    runAI(); draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    [ctx1, ctx2].forEach(ctx => {
+        ctx.clearRect(0,0,c1.width, c1.height);
+        ctx.save();
+        const sc = Math.min(c1.width/400, c1.height/600);
+        ctx.translate(c1.width/2 - 200*sc, 0); ctx.scale(sc, sc);
+
+        // Sân bóng
+        ctx.fillStyle = "#2e7d32"; ctx.fillRect(0,0,400,600);
+        ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 2;
+        ctx.strokeRect(10,10,380,580);
+        ctx.strokeRect(160,0,80,10); ctx.strokeRect(160,590,80,10);
+        ctx.beginPath(); ctx.arc(200,300,50,0,Math.PI*2); ctx.stroke();
+        ctx.moveTo(10,300); ctx.lineTo(390,300); ctx.stroke();
+
+        game.team1.forEach(p => p.draw(ctx));
+        game.team2.forEach(p => p.draw(ctx));
+        ctx.beginPath(); ctx.arc(game.ball.x, game.ball.y, game.ball.r, 0, Math.PI*2);
+        ctx.fillStyle = "white"; ctx.fill(); ctx.stroke();
+        ctx.restore();
+    });
+}
+
+/** * CHẾ ĐỘ LUÂN LƯU 
  */
-function startPenalty() {
-    isRunning = false;
-    alert("Hòa! Bắt đầu đá luân lưu 5 quả.");
-    // Thực hiện logic ẩn vị trí sút/chặn như yêu cầu trong 10s
-    // Đây là khung sườn, bạn có thể mở rộng UI chọn hướng
+function startPenalties() {
+    game.penalties.active = true;
+    game.penalties.count = 1;
+    game.penalties.p1Shooting = true;
+    document.getElementById('penalty-ui').style.display = 'flex';
+    nextPenaltyTurn();
 }
 
-function startGame(mode, level) {
-    gameMode = mode;
-    aiLevel = level || 1;
+function selectPenalty(p, dir) {
+    if (p === 1) game.penalties.p1Choice = dir;
+    else game.penalties.p2Choice = dir;
+    
+    document.querySelectorAll(`#p${p}-penalty-zone .choice-btn`).forEach(b => b.classList.remove('active'));
+    document.getElementById(`p${p}-${dir}`).classList.add('active');
+
+    if (game.penalties.p1Choice && game.penalties.p2Choice) {
+        let count = 3;
+        const cd = document.getElementById('countdown');
+        const itv = setInterval(() => {
+            cd.innerText = count;
+            if (count === 0) {
+                clearInterval(itv);
+                showPenaltyResult();
+            }
+            count--;
+        }, 1000);
+    }
+}
+
+function showPenaltyResult() {
+    const isGoal = game.penalties.p1Choice !== game.penalties.p2Choice;
+    if (isGoal) {
+        if (game.penalties.p1Shooting) game.score1++; else game.score2++;
+        alert("VÀOOO!");
+    } else {
+        alert("THỦ MÔN ĐÃ CẢN PHÁ THÀNH CÔNG!");
+    }
+
+    if (game.penalties.count >= 5 && game.score1 !== game.score2) {
+        alert(`CHUNG CUỘC: ${game.score1} - ${game.score2}`);
+        location.reload();
+    } else {
+        game.penalties.p1Shooting = !game.penalties.p1Shooting;
+        if (game.penalties.p1Shooting) game.penalties.count++;
+        nextPenaltyTurn();
+    }
+}
+
+function nextPenaltyTurn() {
+    game.penalties.p1Choice = null; game.penalties.p2Choice = null;
+    document.getElementById('countdown').innerText = "";
+    document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+    const turnTxt = game.penalties.p1Shooting ? "ĐỎ SÚT - TRẮNG BẮT" : "TRẮNG SÚT - ĐỎ BẮT";
+    document.getElementById('p1-label').innerText = turnTxt;
+    document.getElementById('p2-label').innerText = turnTxt;
+}
+
+function startGame(mode, ai) {
+    game.mode = mode; game.ai = ai;
     document.getElementById('ui-layer').style.display = 'none';
-    initPlayers();
-    isRunning = true;
-    handleInput(canvas1, team1, false);
-    handleInput(canvas2, (gameMode === 'pvp' ? team2 : []), true);
+    initMatch();
+    bindInput(c1, game.team1);
+    bindInput(c2, mode === 'pvp' ? game.team2 : []);
+    game.active = true;
     update();
-}
-
-function endGame() {
-    isRunning = false;
-    alert(`Kết thúc! Tỷ số: ${score.team1} - ${score.team2}`);
-    location.reload();
 }
 </script>
 </body>
