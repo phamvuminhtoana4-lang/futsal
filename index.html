@@ -2,149 +2,143 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Futsal Strategy Simulator</title>
+    <title>Futsal AI Strategy Board</title>
     <style>
-        :root { --field: #1b5e20; --line: #ffffff; }
-        body { background: #121212; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; }
-        
-        #ui { background: #222; padding: 15px; border-bottom: 3px solid #444; width: 100%; display: flex; justify-content: center; gap: 20px; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .stat-box { text-align: center; background: #333; padding: 5px 15px; border-radius: 8px; border: 1px solid #555; }
-        .score { font-size: 28px; font-weight: bold; color: #ffeb3b; }
-        
-        #court { 
-            width: 900px; height: 550px; background: var(--field); 
-            border: 5px solid var(--line); position: relative; margin: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        body { background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        #header { background: #222; width: 100%; padding: 15px; display: flex; justify-content: space-around; border-bottom: 4px solid #444; }
+        #pitch { 
+            width: 800px; height: 500px; background: #2e7d32; border: 4px solid white; 
+            position: relative; margin-top: 20px; overflow: hidden;
         }
-
-        /* Khung thành và khu vực sân */
-        .goal { position: absolute; width: 10px; height: 120px; background: #fff; top: 215px; box-shadow: 0 0 15px white; }
-        .goal.left { left: -10px; border-radius: 5px 0 0 5px; }
-        .goal.right { right: -10px; border-radius: 0 5px 5px 0; }
-        .penalty-area { position: absolute; border: 2px solid var(--line); height: 280px; width: 120px; top: 135px; }
-        .penalty-area.left { left: 0; border-left: none; border-radius: 0 140px 140px 0; }
-        .penalty-area.right { right: 0; border-right: none; border-radius: 140px 0 0 140px; }
-        .center-circle { position: absolute; left: 375px; top: 200px; width: 150px; height: 150px; border: 2px solid var(--line); border-radius: 50%; }
-
-        /* Quân cờ và Bóng */
-        .player { 
+        .line { position: absolute; background: white; }
+        .center-line { left: 50%; height: 100%; width: 2px; }
+        .goal { position: absolute; width: 15px; height: 100px; background: #555; border: 2px solid white; top: 200px; }
+        .goal.left { left: 0; } .goal.right { right: 0; }
+        
+        /* Quân cờ */
+        .p { 
             width: 32px; height: 32px; border-radius: 50%; position: absolute; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 10px; font-weight: bold; z-index: 10;
-            transition: all 0.9s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.4); border: 3px solid;
+            font-size: 11px; font-weight: bold; transition: all 1.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+            border: 3px solid; z-index: 10;
         }
-        .white { background: #fff; color: #000; border-color: #333; }
-        .red { background: #f44336; color: #fff; border-color: #0d47a1; }
+        .white-team { background: white; color: black; border-color: black; box-shadow: 0 0 10px white; }
+        .red-team { background: #ff1744; color: white; border-color: #002171; box-shadow: 0 0 10px #ff1744; }
         
         #ball { 
-            width: 16px; height: 16px; background: radial-gradient(circle, #fff, #ffeb3b); 
-            border-radius: 50%; position: absolute; z-index: 20;
-            transition: all 0.5s ease-out; box-shadow: 0 0 10px #fff;
-            display: flex; align-items: center; justify-content: center; font-size: 10px;
+            width: 16px; height: 16px; background: #ffeb3b; border-radius: 50%; 
+            position: absolute; z-index: 100; transition: all 0.5s ease-out;
+            box-shadow: 0 0 15px yellow; display: flex; align-items: center; justify-content: center;
         }
-
-        select, button { padding: 10px; border-radius: 5px; cursor: pointer; border: none; font-weight: bold; }
-        button { background: #ff9800; color: white; text-transform: uppercase; }
-        button:hover { background: #e68a00; }
+        .score { font-size: 30px; font-weight: bold; color: #ffeb3b; }
+        button { padding: 10px 20px; cursor: pointer; background: #2ecc71; border: none; color: white; font-weight: bold; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-<div id="ui">
-    <div class="stat-box">
-        <div style="font-size: 12px;">TỈ SỐ</div>
-        <div class="score">TRẮNG <span id="sA">0</span> - <span id="sB">0</span> ĐỎ</div>
+<div id="header">
+    <div class="score">TRẮNG <span id="s1">0</span> - <span id="s2">0</span> ĐỎ</div>
+    <div>THỜI GIAN: <span id="clock" style="font-size: 20px;">00:00</span></div>
+    <div>
+        <select id="tacA"><option value="121">Trắng: 1-2-1</option><option value="22">Trắng: 2-2</option></select>
+        <select id="tacB"><option value="121">Đỏ: 1-2-1</option><option value="22">Đỏ: 2-2</option></select>
     </div>
-    <div class="stat-box">
-        <div style="font-size: 12px;">THỜI GIAN</div>
-        <div id="clock" style="font-size: 20px; font-weight: bold;">00:00</div>
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 5px;">
-        <select id="tacA">
-            <option value="121">Trắng: Kim Cương (1-2-1)</option>
-            <option value="22">Trắng: Tứ Trụ (2-2)</option>
-        </select>
-        <select id="tacB">
-            <option value="121">Đỏ: Kim Cương (1-2-1)</option>
-            <option value="22">Đỏ: Tứ Trụ (2-2)</option>
-        </select>
-    </div>
-    <button onclick="startMatch()">Bắt đầu trận đấu</button>
+    <button onclick="startMatch()">BẮT ĐẦU TRẬN ĐẤU</button>
 </div>
 
-<div id="court">
-    <div class="goal left"></div>
-    <div class="goal right"></div>
-    <div class="penalty-area left"></div>
-    <div class="penalty-area right"></div>
-    <div class="center-circle"></div>
-    <div style="position:absolute; left:50%; height:100%; border-left: 2px solid var(--line);"></div>
-    
-    <div id="players-box"></div>
+<div id="pitch">
+    <div class="line center-line"></div>
+    <div class="goal left"></div><div class="goal right"></div>
+    <div id="players-layer"></div>
     <div id="ball">⚽</div>
 </div>
 
 <script>
-    let scoreA = 0, scoreB = 0, mins = 0, gameLoop;
-    const court = document.getElementById('players-box');
+    let score1 = 0, score2 = 0, mins = 0, timer;
+    const layer = document.getElementById('players-layer');
     const ball = document.getElementById('ball');
 
-    const formations = {
-        "121": [ {r:'GK', x:50, y:260}, {r:'FIX', x:200, y:260}, {r:'ALA', x:350, y:80}, {r:'ALA', x:350, y:440}, {r:'PIV', x:500, y:260} ],
-        "22":  [ {r:'GK', x:50, y:260}, {r:'FIX', x:200, y:120}, {r:'FIX', x:200, y:400}, {r:'ALA', x:450, y:120}, {r:'ALA', x:450, y:400} ]
+    // Tọa độ chuẩn (không bao giờ nhầm phe)
+    const baseTactics = {
+        "121": [ {r:'GK', x:40, y:235}, {r:'FIX', x:150, y:235}, {r:'ALA', x:280, y:80}, {r:'ALA', x:280, y:390}, {r:'PIV', x:450, y:235} ],
+        "22":  [ {r:'GK', x:40, y:235}, {r:'FIX', x:150, y:120}, {r:'FIX', x:150, y:350}, {r:'ALA', x:380, y:120}, {r:'ALA', x:380, y:350} ]
     };
 
     function startMatch() {
-        if(gameLoop) clearInterval(gameLoop);
-        scoreA = 0; scoreB = 0; mins = 0;
-        document.getElementById('sA').innerText = 0;
-        document.getElementById('sB').innerText = 0;
-        gameLoop = setInterval(update, 1000); // 1 giây thực tế = 1 phút trong game để quan sát kỹ
+        if(timer) clearInterval(timer);
+        score1 = 0; score2 = 0; mins = 0;
+        document.getElementById('s1').innerText = 0;
+        document.getElementById('s2').innerText = 0;
+        timer = setInterval(simulateStep, 1500); // Chậm lại để học chiến thuật
     }
 
-    function update() {
+    function simulateStep() {
         mins++;
-        if(mins > 90) { clearInterval(gameLoop); alert("Hết giờ!"); return; }
+        if(mins > 90) { clearInterval(timer); return; }
         document.getElementById('clock').innerText = (mins < 10 ? '0'+mins : mins) + ":00";
 
         const tA = document.getElementById('tacA').value;
         const tB = document.getElementById('tacB').value;
-        
-        // Cập nhật vị trí cầu thủ
-        court.innerHTML = '';
-        let posA = formations[tA].map(p => ({...p, team:'white', cx: p.x + Math.random()*30, cy: p.y + Math.random()*50-25}));
-        let posB = formations[tB].map(p => ({...p, team:'red', cx: 900 - p.x - 32 - Math.random()*30, cy: 550 - p.y - 32 + Math.random()*50-25}));
 
-        [...posA, ...posB].forEach(p => {
-            const div = document.createElement('div');
-            div.className = `player ${p.team}`;
-            div.style.left = p.cx + 'px';
-            div.style.top = p.cy + 'px';
-            div.innerText = p.r;
-            court.appendChild(div);
+        // Xác định đội nào đang cầm bóng tấn công
+        const isWhiteAttacking = Math.random() > 0.5;
+        
+        layer.innerHTML = '';
+        
+        // ĐỘI TRẮNG (Luôn đi từ Trái sang Phải)
+        let whitePlayers = baseTactics[tA].map((p, i) => {
+            let nx = p.x + (isWhiteAttacking ? 200 : 0) + (Math.random()*40-20);
+            let ny = p.y + (Math.random()*40-20);
+            if(i === 0) { nx = 40; ny = 235; } // Thủ môn đứng im
+            createPlayer(nx, ny, p.r, 'white-team');
+            return {x: nx, y: ny};
         });
 
-        // Logic phối hợp bóng và ghi bàn
-        const attackingSide = Math.random() > 0.5 ? 'A' : 'B';
-        const teamData = attackingSide === 'A' ? posA : posB;
-        const targetGoal = attackingSide === 'A' ? 'right' : 'left';
-        
-        // Chọn 1 cầu thủ đang cầm bóng (không phải thủ môn)
-        const playerWithBall = teamData[Math.floor(Math.random() * 4) + 1];
-        ball.style.left = (playerWithBall.cx + 8) + 'px';
-        ball.style.top = (playerWithBall.cy + 8) + 'px';
+        // ĐỘI ĐỎ (Luôn đi từ Phải sang Trái)
+        let redPlayers = baseTactics[tB].map((p, i) => {
+            let nx = 800 - p.x - 32 - (!isWhiteAttacking ? 200 : 0) + (Math.random()*40-20);
+            let ny = 500 - p.y - 32 + (Math.random()*40-20);
+            if(i === 0) { nx = 730; ny = 235; } // Thủ môn đứng im
+            createPlayer(nx, ny, p.r, 'red-team');
+            return {x: nx, y: ny};
+        });
 
-        // Điều kiện ghi bàn: Phải ở sân đối phương và xác suất
-        setTimeout(() => {
-            if(attackingSide === 'A' && playerWithBall.cx > 450 && Math.random() > 0.8) {
-                ball.style.left = "890px"; ball.style.top = "265px";
-                scoreA++; document.getElementById('sA').innerText = scoreA;
-            } else if(attackingSide === 'B' && playerWithBall.cx < 450 && Math.random() > 0.8) {
-                ball.style.left = "0px"; ball.style.top = "265px";
-                scoreB++; document.getElementById('sB').innerText = scoreB;
+        // DI CHUYỂN BÓNG ⚽
+        if(isWhiteAttacking) {
+            // Chuyền bóng cho 1 cầu thủ đội trắng ở phía trên
+            let p = whitePlayers[Math.floor(Math.random()*4)+1];
+            ball.style.left = (p.x + 8) + 'px';
+            ball.style.top = (p.y + 8) + 'px';
+            
+            // Nếu PIVOT (quân số 5) ở gần khung thành thì ghi bàn
+            if(p.x > 600 && Math.random() > 0.8) {
+                setTimeout(() => {
+                    ball.style.left = "785px"; ball.style.top = "242px";
+                    score1++; document.getElementById('s1').innerText = score1;
+                }, 500);
             }
-        }, 500);
+        } else {
+            // Đội đỏ tấn công
+            let p = redPlayers[Math.floor(Math.random()*4)+1];
+            ball.style.left = (p.x + 8) + 'px';
+            ball.style.top = (p.y + 8) + 'px';
+
+            if(p.x < 200 && Math.random() > 0.8) {
+                setTimeout(() => {
+                    ball.style.left = "0px"; ball.style.top = "242px";
+                    score2++; document.getElementById('s2').innerText = score2;
+                }, 500);
+            }
+        }
+    }
+
+    function createPlayer(x, y, role, team) {
+        const div = document.createElement('div');
+        div.className = `p ${team}`;
+        div.style.left = x + 'px';
+        div.style.top = y + 'px';
+        div.innerText = role;
+        layer.appendChild(div);
     }
 </script>
 </body>
