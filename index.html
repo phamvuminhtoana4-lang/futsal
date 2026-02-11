@@ -2,168 +2,149 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Futsal Tactical Battle Sim</title>
+    <title>Futsal Strategy Simulator</title>
     <style>
-        :root { --court-green: #2e7d32; --line-white: rgba(255,255,255,0.8); }
-        body { background: #1a1a1a; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; overflow: hidden; }
+        :root { --field: #1b5e20; --line: #ffffff; }
+        body { background: #121212; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; }
         
-        /* Giao diện điều khiển */
-        #ui-panel { position: absolute; left: 20px; top: 20px; width: 300px; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; border: 1px solid #444; z-index: 100; }
-        .score-board { font-size: 32px; font-weight: bold; text-align: center; margin-bottom: 15px; border-bottom: 2px solid #555; padding-bottom: 10px; }
-        .timer { font-size: 20px; color: #ffeb3b; margin-bottom: 20px; text-align: center; }
+        #ui { background: #222; padding: 15px; border-bottom: 3px solid #444; width: 100%; display: flex; justify-content: center; gap: 20px; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .stat-box { text-align: center; background: #333; padding: 5px 15px; border-radius: 8px; border: 1px solid #555; }
+        .score { font-size: 28px; font-weight: bold; color: #ffeb3b; }
         
-        /* Sân bóng */
-        #stadium { display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #court { width: 800px; height: 500px; background: var(--court-green); border: 4px solid white; position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        .center-line { position: absolute; left: 50%; height: 100%; border-left: 2px solid white; }
-        .center-circle { position: absolute; left: 330px; top: 180px; width: 140px; height: 140px; border: 2px solid white; border-radius: 50%; }
+        #court { 
+            width: 900px; height: 550px; background: var(--field); 
+            border: 5px solid var(--line); position: relative; margin: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        /* Khung thành và khu vực sân */
+        .goal { position: absolute; width: 10px; height: 120px; background: #fff; top: 215px; box-shadow: 0 0 15px white; }
+        .goal.left { left: -10px; border-radius: 5px 0 0 5px; }
+        .goal.right { right: -10px; border-radius: 0 5px 5px 0; }
+        .penalty-area { position: absolute; border: 2px solid var(--line); height: 280px; width: 120px; top: 135px; }
+        .penalty-area.left { left: 0; border-left: none; border-radius: 0 140px 140px 0; }
+        .penalty-area.right { right: 0; border-right: none; border-radius: 140px 0 0 140px; }
+        .center-circle { position: absolute; left: 375px; top: 200px; width: 150px; height: 150px; border: 2px solid var(--line); border-radius: 50%; }
+
+        /* Quân cờ và Bóng */
+        .player { 
+            width: 32px; height: 32px; border-radius: 50%; position: absolute; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 10px; font-weight: bold; z-index: 10;
+            transition: all 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4); border: 3px solid;
+        }
+        .white { background: #fff; color: #000; border-color: #333; }
+        .red { background: #f44336; color: #fff; border-color: #0d47a1; }
         
-        /* Quân cờ */
-        .player { width: 30px; height: 30px; border-radius: 50%; position: absolute; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-        .team-a { background: #ffffff; color: #000; border: 3px solid #000; } /* Trắng - Đen */
-        .team-b { background: #f44336; color: #fff; border: 3px solid #2196f3; } /* Đỏ - Xanh */
-        .ball { width: 15px; height: 15px; background: #fff; border-radius: 50%; position: absolute; z-index: 3; transition: all 0.4s ease-out; box-shadow: 0 0 10px #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        
-        select, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
-        button { background: #4caf50; color: white; transition: 0.3s; }
-        button:hover { background: #45a049; }
-        .log { margin-top: 15px; font-size: 12px; height: 100px; overflow-y: auto; color: #aaa; background: #000; padding: 5px; }
+        #ball { 
+            width: 16px; height: 16px; background: radial-gradient(circle, #fff, #ffeb3b); 
+            border-radius: 50%; position: absolute; z-index: 20;
+            transition: all 0.5s ease-out; box-shadow: 0 0 10px #fff;
+            display: flex; align-items: center; justify-content: center; font-size: 10px;
+        }
+
+        select, button { padding: 10px; border-radius: 5px; cursor: pointer; border: none; font-weight: bold; }
+        button { background: #ff9800; color: white; text-transform: uppercase; }
+        button:hover { background: #e68a00; }
     </style>
 </head>
 <body>
 
-<div id="ui-panel">
-    <div class="score-board">
-        <span style="color:white">TRA</span> <span id="scoreA">0</span> : <span id="scoreB">0</span> <span style="color:red">ĐỎ</span>
+<div id="ui">
+    <div class="stat-box">
+        <div style="font-size: 12px;">TỈ SỐ</div>
+        <div class="score">TRẮNG <span id="sA">0</span> - <span id="sB">0</span> ĐỎ</div>
     </div>
-    <div class="timer">Thời gian: <span id="clock">00:00</span></div>
-    
-    <label>Chiến thuật Đội Trắng:</label>
-    <select id="selectA">
-        <option value="121">Kim cương (1-2-1) - Cân bằng</option>
-        <option value="22">Tứ trụ (2-2) - Kiểm soát</option>
-        <option value="40">4-0 - Tấn công liên tục</option>
-    </select>
-
-    <label>Chiến thuật Đội Đỏ:</label>
-    <select id="selectB">
-        <option value="121">Kim cương (1-2-1)</option>
-        <option value="22">Tứ trụ (2-2)</option>
-        <option value="40">4-0 - Tấn công liên tục</option>
-    </select>
-
-    <button onclick="initMatch()">BẮT ĐẦU MÔ PHỎNG</button>
-    <div class="log" id="matchLog">Sẵn sàng trận đấu...</div>
+    <div class="stat-box">
+        <div style="font-size: 12px;">THỜI GIAN</div>
+        <div id="clock" style="font-size: 20px; font-weight: bold;">00:00</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 5px;">
+        <select id="tacA">
+            <option value="121">Trắng: Kim Cương (1-2-1)</option>
+            <option value="22">Trắng: Tứ Trụ (2-2)</option>
+        </select>
+        <select id="tacB">
+            <option value="121">Đỏ: Kim Cương (1-2-1)</option>
+            <option value="22">Đỏ: Tứ Trụ (2-2)</option>
+        </select>
+    </div>
+    <button onclick="startMatch()">Bắt đầu trận đấu</button>
 </div>
 
-<div id="stadium">
-    <div id="court">
-        <div class="center-line"></div>
-        <div class="center-circle"></div>
-        <div id="players-layer"></div>
-        <div id="ball" class="ball">⚽</div>
-    </div>
+<div id="court">
+    <div class="goal left"></div>
+    <div class="goal right"></div>
+    <div class="penalty-area left"></div>
+    <div class="penalty-area right"></div>
+    <div class="center-circle"></div>
+    <div style="position:absolute; left:50%; height:100%; border-left: 2px solid var(--line);"></div>
+    
+    <div id="players-box"></div>
+    <div id="ball">⚽</div>
 </div>
 
 <script>
-    const playersLayer = document.getElementById('players-layer');
-    const ballEl = document.getElementById('ball');
-    const logEl = document.getElementById('matchLog');
-    let matchTimer = null;
-    let minute = 0;
-    let scoreA = 0;
-    let scoreB = 0;
+    let scoreA = 0, scoreB = 0, mins = 0, gameLoop;
+    const court = document.getElementById('players-box');
+    const ball = document.getElementById('ball');
 
-    // Định nghĩa các điểm di chuyển theo chiến thuật (x: 0-800, y: 0-500)
-    const tactics = {
-        "121": [ {x:40, y:250}, {x:200, y:250}, {x:300, y:100}, {x:300, y:400}, {x:450, y:250} ],
-        "22":  [ {x:40, y:250}, {x:180, y:120}, {x:180, y:380}, {x:400, y:120}, {x:400, y:380} ],
-        "40":  [ {x:40, y:250}, {x:350, y:80}, {x:350, y:200}, {x:350, y:300}, {x:350, y:420} ]
+    const formations = {
+        "121": [ {r:'GK', x:50, y:260}, {r:'FIX', x:200, y:260}, {r:'ALA', x:350, y:80}, {r:'ALA', x:350, y:440}, {r:'PIV', x:500, y:260} ],
+        "22":  [ {r:'GK', x:50, y:260}, {r:'FIX', x:200, y:120}, {r:'FIX', x:200, y:400}, {r:'ALA', x:450, y:120}, {r:'ALA', x:450, y:400} ]
     };
 
-    function addLog(msg) {
-        logEl.innerHTML = `<div>${msg}</div>` + logEl.innerHTML;
+    function startMatch() {
+        if(gameLoop) clearInterval(gameLoop);
+        scoreA = 0; scoreB = 0; mins = 0;
+        document.getElementById('sA').innerText = 0;
+        document.getElementById('sB').innerText = 0;
+        gameLoop = setInterval(update, 1000); // 1 giây thực tế = 1 phút trong game để quan sát kỹ
     }
 
-    function initMatch() {
-        if(matchTimer) clearInterval(matchTimer);
-        minute = 0; scoreA = 0; scoreB = 0;
-        document.getElementById('scoreA').innerText = 0;
-        document.getElementById('scoreB').innerText = 0;
-        addLog("Trận đấu bắt đầu!");
+    function update() {
+        mins++;
+        if(mins > 90) { clearInterval(gameLoop); alert("Hết giờ!"); return; }
+        document.getElementById('clock').innerText = (mins < 10 ? '0'+mins : mins) + ":00";
+
+        const tA = document.getElementById('tacA').value;
+        const tB = document.getElementById('tacB').value;
         
-        loop();
-        matchTimer = setInterval(loop, 200); // Mỗi 200ms là 1 phút bóng đá
-    }
+        // Cập nhật vị trí cầu thủ
+        court.innerHTML = '';
+        let posA = formations[tA].map(p => ({...p, team:'white', cx: p.x + Math.random()*30, cy: p.y + Math.random()*50-25}));
+        let posB = formations[tB].map(p => ({...p, team:'red', cx: 900 - p.x - 32 - Math.random()*30, cy: 550 - p.y - 32 + Math.random()*50-25}));
 
-    function loop() {
-        minute++;
-        if(minute > 90) {
-            clearInterval(matchTimer);
-            addLog("KẾT THÚC TRẬN ĐẤU!");
-            return;
-        }
-        document.getElementById('clock').innerText = (minute < 10 ? "0"+minute : minute) + ":00";
-
-        const tacKeyA = document.getElementById('selectA').value;
-        const tacKeyB = document.getElementById('selectB').value;
-
-        updateVisuals(tacKeyA, tacKeyB);
-        calculateEvent(tacKeyA, tacKeyB);
-    }
-
-    function updateVisuals(tacA, tacB) {
-        playersLayer.innerHTML = '';
-        
-        // Vẽ đội Trắng (Team A)
-        tactics[tacA].forEach((pos, i) => {
-            // Thêm độ rung lắc ngẫu nhiên để thấy sự di chuyển
-            let driftX = Math.sin(minute + i) * 20;
-            let driftY = Math.cos(minute + i) * 20;
-            createPlayer(pos.x + driftX, pos.y + driftY, i==0?'GK':'A'+i, 'team-a');
+        [...posA, ...posB].forEach(p => {
+            const div = document.createElement('div');
+            div.className = `player ${p.team}`;
+            div.style.left = p.cx + 'px';
+            div.style.top = p.cy + 'px';
+            div.innerText = p.r;
+            court.appendChild(div);
         });
 
-        // Vẽ đội Đỏ (Team B) - Đảo ngược vị trí sân
-        tactics[tacB].forEach((pos, i) => {
-            let driftX = Math.sin(minute + i) * 20;
-            let driftY = Math.cos(minute + i) * 20;
-            createPlayer(800 - pos.x - 30 - driftX, 500 - pos.y - driftY, i==0?'GK':'B'+i, 'team-b');
-        });
+        // Logic phối hợp bóng và ghi bàn
+        const attackingSide = Math.random() > 0.5 ? 'A' : 'B';
+        const teamData = attackingSide === 'A' ? posA : posB;
+        const targetGoal = attackingSide === 'A' ? 'right' : 'left';
+        
+        // Chọn 1 cầu thủ đang cầm bóng (không phải thủ môn)
+        const playerWithBall = teamData[Math.floor(Math.random() * 4) + 1];
+        ball.style.left = (playerWithBall.cx + 8) + 'px';
+        ball.style.top = (playerWithBall.cy + 8) + 'px';
 
-        // Di chuyển bóng về phía đội đang chiếm ưu thế
-        let ballX = 400 + Math.sin(minute) * 300;
-        let ballY = 250 + Math.cos(minute) * 200;
-        ballEl.style.left = ballX + 'px';
-        ballEl.style.top = ballY + 'px';
-    }
-
-    function createPlayer(x, y, label, className) {
-        const p = document.createElement('div');
-        p.className = 'player ' + className;
-        p.style.left = x + 'px';
-        p.style.top = y + 'px';
-        p.innerText = label;
-        playersLayer.appendChild(p);
-    }
-
-    function calculateEvent(tacA, tacB) {
-        // Logic mô phỏng: 4-0 khắc chế 2-2, 1-2-1 cân bằng
-        let chanceA = 0.02;
-        let chanceB = 0.02;
-
-        if(tacA === '40' && tacB === '22') chanceA = 0.05;
-        if(tacB === '40' && tacA === '22') chanceB = 0.05;
-
-        if(Math.random() < chanceA) {
-            scoreA++;
-            document.getElementById('scoreA').innerText = scoreA;
-            addLog(`Phút ${minute}: Đội TRẮNG ghi bàn từ pha phối hợp ${tacA}!`);
-        }
-        if(Math.random() < chanceB) {
-            scoreB++;
-            document.getElementById('scoreB').innerText = scoreB;
-            addLog(`Phút ${minute}: Đội ĐỎ ghi bàn nhờ sơ đồ ${tacB}!`);
-        }
+        // Điều kiện ghi bàn: Phải ở sân đối phương và xác suất
+        setTimeout(() => {
+            if(attackingSide === 'A' && playerWithBall.cx > 450 && Math.random() > 0.8) {
+                ball.style.left = "890px"; ball.style.top = "265px";
+                scoreA++; document.getElementById('sA').innerText = scoreA;
+            } else if(attackingSide === 'B' && playerWithBall.cx < 450 && Math.random() > 0.8) {
+                ball.style.left = "0px"; ball.style.top = "265px";
+                scoreB++; document.getElementById('sB').innerText = scoreB;
+            }
+        }, 500);
     }
 </script>
 </body>
