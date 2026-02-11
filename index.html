@@ -2,187 +2,538 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Futsal Tactical Engine Pro 2026</title>
+    <title>Futsal Tactical Professional Simulator v2.0</title>
     <style>
-        body { background: #1a1a1a; color: #eee; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        #header { background: #2c3e50; width: 100%; padding: 20px; text-align: center; border-bottom: 4px solid #e67e22; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .score-board { font-size: 40px; font-weight: bold; font-family: 'Courier New', monospace; color: #f1c40f; text-shadow: 2px 2px #000; }
-        canvas { background: #27ae60; border: 10px solid #fff; border-radius: 5px; cursor: crosshair; margin: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
-        .controls { background: #34495e; padding: 20px; border-radius: 10px; display: flex; gap: 20px; align-items: center; }
-        select, button { padding: 12px 20px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
-        button { background: #e67e22; color: white; transition: 0.3s; }
-        button:hover { background: #d35400; transform: scale(1.05); }
-        #event-log { position: absolute; right: 20px; top: 150px; width: 250px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; font-size: 13px; max-height: 400px; overflow-y: hidden; border-left: 3px solid #e67e22; }
+        /* PHẦN CSS: THIẾT KẾ GIAO DIỆN CHUYÊN NGHIỆP */
+        :root {
+            --pitch-color: #2e7d32;
+            --ui-bg: #121212;
+            --text-gold: #f1c40f;
+            --team-a: #ffffff;
+            --team-b: #ff3d00;
+        }
+        body { margin: 0; background: var(--ui-bg); color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        #sidebar { width: 400px; background: #1a1a1a; border-right: 2px solid #333; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        #canvas-container { flex-grow: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #000; }
+        
+        canvas { background: var(--pitch-color); border: 4px solid #fff; border-radius: 4px; box-shadow: 0 0 40px rgba(0,0,0,1); }
+        
+        .score-panel { background: #222; padding: 20px; border-radius: 10px; border: 1px solid #444; text-align: center; margin-bottom: 20px; }
+        .score-display { font-size: 54px; font-weight: 900; letter-spacing: 5px; color: var(--text-gold); font-family: 'Courier New', Courier, monospace; }
+        .timer { font-size: 24px; color: #888; margin-bottom: 10px; }
+
+        .tactics-control { background: #262626; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #e67e22; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #aaa; }
+        select { width: 100%; padding: 12px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; font-size: 14px; }
+        
+        .btn-start { width: 100%; padding: 18px; margin-top: 20px; background: #e67e22; color: white; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
+        .btn-start:hover { background: #d35400; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(230,126,34,0.4); }
+
+        .log-console { flex-grow: 1; background: #000; border: 1px solid #333; padding: 10px; font-family: 'Consolas', monospace; font-size: 12px; color: #4caf50; overflow-y: scroll; margin-top: 20px; border-radius: 4px; }
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #222; padding-bottom: 2px; }
     </style>
 </head>
 <body>
 
-<div id="header">
-    <div class="score-board">TRẮNG <span id="scoreA">0</span> - <span id="scoreB">0</span> ĐỎ</div>
-    <div style="margin-top: 10px;">THỜI GIAN MÔ PHỎNG: <span id="timer" style="color: #e67e22; font-size: 20px;">00:00</span></div>
+<div id="sidebar">
+    <div class="score-panel">
+        <div class="timer" id="match-timer">00:00</div>
+        <div class="score-display"><span id="score-a">00</span> - <span id="score-b">00</span></div>
+        <div style="display:flex; justify-content: space-between; margin-top:10px; font-size:12px; font-weight:bold;">
+            <span>TRẮNG</span><span>ĐỎ</span>
+        </div>
+    </div>
+
+    <div class="tactics-control">
+        <label>CHIẾN THUẬT ĐỘI TRẮNG</label>
+        <select id="select-tac-a">
+            <option value="121">Kim cương (1-2-1) - Cân bằng</option>
+            <option value="22">Tứ trụ (2-2) - Kiểm soát bóng</option>
+            <option value="31">Sơ đồ 3-1 - Tấn công Pivot</option>
+            <option value="40">Sơ đồ 4-0 - Tổng lực (Advanced)</option>
+        </select>
+    </div>
+
+    <div class="tactics-control">
+        <label>CHIẾN THUẬT ĐỘI ĐỎ</label>
+        <select id="select-tac-b">
+            <option value="121">Kim cương (1-2-1) - Cân bằng</option>
+            <option value="22">Tứ trụ (2-2) - Kiểm soát bóng</option>
+            <option value="31">Sơ đồ 3-1 - Tấn công Pivot</option>
+            <option value="40">Sơ đồ 4-0 - Tổng lực (Advanced)</option>
+        </select>
+    </div>
+
+    <button class="btn-start" onclick="FutsalApp.startMatch()">Bắt đầu trận đấu 90'</button>
+
+    <div class="log-console" id="log-console">
+        <div class="log-entry">> Hệ thống AI Tactical Engine sẵn sàng...</div>
+    </div>
 </div>
 
-<div id="event-log" id="log"><b>NHẬT KÝ CHIẾN THUẬT:</b><div id="log-content"></div></div>
-
-<canvas id="futsalPitch" width="1000" height="600"></canvas>
-
-<div class="controls">
-    <div>
-        <label>Đội Trắng:</label>
-        <select id="tacA">
-            <option value="121">Kim cương (1-2-1)</option>
-            <option value="22">Tứ trụ (2-2)</option>
-        </select>
-    </div>
-    <div>
-        <label>Đội Đỏ:</label>
-        <select id="tacB">
-            <option value="121">Kim cương (1-2-1)</option>
-            <option value="22">Tứ trụ (2-2)</option>
-        </select>
-    </div>
-    <button onclick="initGame()">BẮT ĐẦU TRẬN ĐẤU (90 PHÚT)</button>
+<div id="canvas-container">
+    <canvas id="futsal-pitch"></canvas>
 </div>
 
 <script>
-    const canvas = document.getElementById('futsalPitch');
-    const ctx = canvas.getContext('2d');
-    let gameInterval;
-    let scoreA = 0, scoreB = 0, frames = 0, minutes = 0;
+/**
+ * PHẦN 1: CORE ENGINE & VECTOR MATH LIBRARY
+ * Thiết lập các lớp cơ bản cho Vật lý, Vector và Khung trận đấu.
+ */
 
-    // Cấu hình vật lý và AI
-    const ball = { x: 500, y: 300, targetX: 500, targetY: 300, speed: 0.12 };
-    let teamA = [], teamB = [];
+// 1. LỚP VECTOR TOÁN HỌC - Xử lý mọi chuyển động và hướng của cầu thủ
+class Vector {
+    constructor(x, y) { this.x = x; this.y = y; }
+    add(v) { return new Vector(this.x + v.x, this.y + v.y); }
+    sub(v) { return new Vector(this.x - v.x, this.y - v.y); }
+    mul(n) { return new Vector(this.x * n, this.y * n); }
+    div(n) { return n !== 0 ? new Vector(this.x / n, this.y / n) : new Vector(0,0); }
+    mag() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+    normalize() { let m = this.mag(); return m !== 0 ? this.div(m) : new Vector(0,0); }
+    limit(max) { if (this.mag() > max) return this.normalize().mul(max); return this; }
+    dist(v) { return Math.sqrt((this.x - v.x)**2 + (this.y - v.y)**2); }
+}
 
-    const formations = {
-        "121": [ {r:'GK', ox:80, oy:300}, {r:'FIX', ox:250, oy:300}, {r:'ALA', ox:450, oy:100}, {r:'ALA', ox:450, oy:500}, {r:'PIV', ox:650, oy:300} ],
-        "22":  [ {r:'GK', ox:80, oy:300}, {r:'FIX', ox:250, oy:150}, {r:'FIX', ox:250, oy:450}, {r:'ALA', ox:550, oy:150}, {r:'ALA', ox:550, oy:450} ]
-    };
+// 2. KHỞI TẠO ĐỐI TƯỢNG APP TOÀN CỤC
+const FutsalApp = {
+    canvas: document.getElementById('futsal-pitch'),
+    ctx: null,
+    width: 1000,
+    height: 600,
+    isRunning: false,
+    matchTime: 0, // Phút
+    frames: 0,
+    scoreA: 0,
+    scoreB: 0,
+    players: [],
+    ball: null,
 
-    function initGame() {
-        if(gameInterval) clearInterval(gameInterval);
-        scoreA = 0; scoreB = 0; minutes = 0;
-        updateScore();
-        const tA = document.getElementById('tacA').value;
-        const tB = document.getElementById('tacB').value;
+    init() {
+        this.ctx = this.canvas.getContext('2d');
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+        this.drawPitch();
+        console.log("Phần 1: Core Engine Loaded.");
+    },
+
+    drawPitch() {
+        const c = this.ctx;
+        // Vẽ mặt cỏ
+        c.fillStyle = '#2e7d32';
+        c.fillRect(0, 0, this.width, this.height);
         
-        teamA = formations[tA].map(p => ({ ...p, x: p.ox, y: p.oy, team: 'A' }));
-        teamB = formations[tB].map(p => ({ ...p, x: 1000 - p.ox, y: 600 - p.oy, team: 'B' }));
+        // Vẽ vạch kẻ sân
+        c.strokeStyle = '#fff';
+        c.lineWidth = 4;
+        c.strokeRect(20, 20, this.width - 40, this.height - 40);
         
-        log("Trận đấu bắt đầu! Triển khai đội hình.");
-        gameInterval = setInterval(update, 20); // 50 FPS
-    }
+        // Vạch giữa sân
+        c.beginPath();
+        c.moveTo(this.width / 2, 20);
+        c.lineTo(this.width / 2, this.height - 20);
+        c.stroke();
 
-    function update() {
-        frames++;
-        if(frames % 50 === 0) {
-            minutes++;
-            document.getElementById('timer').innerText = (minutes < 10 ? "0"+minutes : minutes) + ":00";
-            if(minutes >= 90) endGame();
-        }
+        // Vòng tròn giữa sân
+        c.beginPath();
+        c.arc(this.width / 2, this.height / 2, 80, 0, Math.PI * 2);
+        c.stroke();
 
-        drawPitch();
+        // Khu vực cấm địa (Bán nguyệt)
+        this.drawArea(20, this.height / 2, 1);  // Bên trái
+        this.drawArea(this.width - 20, this.height / 2, -1); // Bên phải
         
-        // AI Logic: Đội nào tấn công?
-        let attackingTeam = (Math.floor(minutes / 2) % 2 === 0) ? teamA : teamB;
-        let defendingTeam = (attackingTeam === teamA) ? teamB : teamA;
-
-        // Cầu thủ di chuyển theo AI
-        moveTeam(teamA, attackingTeam === teamA, 'A');
-        moveTeam(teamB, attackingTeam === teamB, 'B');
-
-        // Logic bóng chuyền
-        if(frames % 60 === 0) {
-            let p = attackingTeam[Math.floor(Math.random()*4)+1];
-            ball.targetX = p.x; ball.targetY = p.y;
-            if(Math.random() > 0.92) attemptGoal(attackingTeam);
-        }
-
-        // Lerp bóng (di chuyển mượt)
-        ball.x += (ball.targetX - ball.x) * ball.speed;
-        ball.y += (ball.targetY - ball.y) * ball.speed;
-
-        drawBall();
-    }
-
-    function moveTeam(team, isAttacking, side) {
-        team.forEach((p, i) => {
-            if(p.r === 'GK') return; // Thủ môn giữ gôn
-
-            let targetX = p.ox + (isAttacking ? (side === 'A' ? 250 : -250) : 0);
-            if(side === 'B') targetX = 1000 - targetX;
-
-            // Chạy chỗ ngẫu nhiên tìm khoảng trống
-            p.x += (targetX - p.x) * 0.02 + (Math.random() - 0.5) * 2;
-            p.y += (p.oy - p.y) * 0.02 + (Math.random() - 0.5) * 2;
-
-            drawPlayer(p);
-        });
-    }
-
-    function attemptGoal(team) {
-        const side = team[0].team;
-        log("Đội " + (side === 'A' ? "TRẮNG" : "ĐỎ") + " tung cú sút!");
-        ball.targetX = (side === 'A' ? 1000 : 0);
-        ball.targetY = 300;
-        
-        setTimeout(() => {
-            if(Math.random() > 0.7) {
-                if(side === 'A') scoreA++; else scoreB++;
-                updateScore();
-                log("VÀOOO! Một pha phối hợp mẫu mực.");
-                ball.x = 500; ball.y = 300; ball.targetX = 500; ball.targetY = 300;
-            } else {
-                log("Không vào! Thủ môn đã cản phá xuất sắc.");
-            }
-        }, 400);
-    }
-
-    function drawPitch() {
-        ctx.fillStyle = "#27ae60"; ctx.fillRect(0,0,1000,600);
-        ctx.strokeStyle = "white"; ctx.lineWidth = 3;
-        // Vạch sân
-        ctx.strokeRect(5,5,990,590);
-        ctx.beginPath(); ctx.moveTo(500,0); ctx.lineTo(500,600); ctx.stroke();
-        ctx.beginPath(); ctx.arc(500, 300, 80, 0, Math.PI*2); ctx.stroke();
         // Khung thành
-        ctx.fillStyle = "rgba(255,255,255,0.2)";
-        ctx.fillRect(0, 225, 15, 150); ctx.fillRect(985, 225, 15, 150);
+        c.fillStyle = '#fff';
+        c.fillRect(5, this.height / 2 - 60, 15, 120);
+        c.fillRect(this.width - 20, this.height / 2 - 60, 15, 120);
+    },
+
+    drawArea(x, y, dir) {
+        const c = this.ctx;
+        c.beginPath();
+        c.arc(x, y, 140, -Math.PI/2, Math.PI/2, dir < 0);
+        c.stroke();
+    },
+
+    log(msg) {
+        const consoleEl = document.getElementById('log-console');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerText = `[${this.matchTime}:00] > ${msg}`;
+        consoleEl.prepend(entry);
+    },
+
+    startMatch() {
+        this.isRunning = true;
+        this.matchTime = 0;
+        this.scoreA = 0;
+        this.scoreB = 0;
+        this.log("Kích hoạt AI đội hình và hệ thống vật lý...");
+class Player {
+    constructor(id, team, role, basePos) {
+        this.id = id;
+        this.team = team; // 'A' (Trắng) hoặc 'B' (Đỏ)
+        this.role = role; // 'GK', 'FIX', 'ALA', 'PIV'
+        this.basePos = basePos; // Vị trí gốc theo sơ đồ (Vector)
+        this.pos = new Vector(basePos.x, basePos.y);
+        this.vel = new Vector(0, 0);
+        this.acc = new Vector(0, 0);
+        this.maxSpeed = team === 'A' ? 2.8 : 2.7; // Tùy chỉnh tốc độ theo đội
+        this.maxForce = 0.15;
+        this.radius = 16;
+        this.hasBall = false;
     }
 
-    function drawPlayer(p) {
+    // Tư duy AI: Tính toán lực đẩy để di chuyển đúng vị trí chiến thuật
+    behaviors(ball, teammates, opponents) {
+        // 1. Lực duy trì sơ đồ (Arrive)
+        let arrive = this.arrive(this.basePos);
+        
+        // 2. Lực bám đuổi bóng nếu bóng gần (Seek)
+        let dToBall = this.pos.dist(new Vector(ball.x, ball.y));
+        let seekBall = new Vector(0, 0);
+        if (dToBall < 200 && this.role !== 'GK') {
+            seekBall = this.seek(new Vector(ball.x, ball.y)).mul(1.2);
+        }
+
+        // 3. Lực tránh va chạm đồng đội (Separation)
+        let separate = this.separate(teammates);
+
+        // Cộng các lực vector lại
+        this.applyForce(arrive.mul(0.5));
+        this.applyForce(seekBall.mul(0.8));
+        this.applyForce(separate.mul(1.5));
+    }
+
+    applyForce(force) {
+        this.acc = this.acc.add(force);
+    }
+
+    update() {
+        this.vel = this.vel.add(this.acc).limit(this.maxSpeed);
+        this.pos = this.pos.add(this.vel);
+        this.acc = this.acc.mul(0); // Reset gia tốc sau mỗi frame
+    }
+
+    seek(target) {
+        let desired = target.sub(this.pos);
+        desired = desired.normalize().mul(this.maxSpeed);
+        let steer = desired.sub(this.vel);
+        return steer.limit(this.maxForce);
+    }
+
+    arrive(target) {
+        let desired = target.sub(this.pos);
+        let d = desired.mag();
+        if (d < 100) {
+            let m = map(d, 0, 100, 0, this.maxSpeed);
+            desired = desired.normalize().mul(m);
+        } else {
+            desired = desired.normalize().mul(this.maxSpeed);
+        }
+        let steer = desired.sub(this.vel);
+        return steer.limit(this.maxForce);
+    }
+
+    separate(teammates) {
+        let desiredSep = 40;
+        let sum = new Vector(0, 0);
+        let count = 0;
+        teammates.forEach(other => {
+            let d = this.pos.dist(other.pos);
+            if (d > 0 && d < desiredSep) {
+                let diff = this.pos.sub(other.pos).normalize().div(d);
+                sum = sum.add(diff);
+                count++;
+            }
+        });
+        if (count > 0) {
+            sum = sum.div(count).normalize().mul(this.maxSpeed);
+            let steer = sum.sub(this.vel);
+            return steer.limit(this.maxForce);
+        }
+        return new Vector(0, 0);
+    }
+
+    draw(ctx) {
+        ctx.save();
+        // Vẽ bóng đổ
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        
+        // Vẽ thân quân cờ
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 15, 0, Math.PI*2);
-        ctx.fillStyle = p.team === 'A' ? "white" : "red";
+        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.team === 'A' ? "#ffffff" : "#ff3d00";
         ctx.fill();
-        ctx.strokeStyle = p.team === 'A' ? "black" : "blue";
+        ctx.strokeStyle = this.team === 'A' ? "#000" : "#002171";
+        ctx.lineWidth = 3;
         ctx.stroke();
-        ctx.fillStyle = p.team === 'A' ? "black" : "white";
+
+        // Vẽ tên vai trò (FIX, ALA, PIV)
+        ctx.fillStyle = this.team === 'A' ? "#000" : "#fff";
         ctx.font = "bold 10px Arial";
-        ctx.fillText(p.r, p.x-10, p.y+4);
+        ctx.textAlign = "center";
+        ctx.fillText(this.role, this.pos.x, this.pos.y + 4);
+        ctx.restore();
+    }
+}
+
+// BỘ ĐIỀU PHỐI CHIẾN THUẬT (Tactical Manager)
+const TacticalManager = {
+    getFormation(type, team) {
+        const isTeamA = team === 'A';
+        const startX = isTeamA ? 0 : 1000;
+        const dir = isTeamA ? 1 : -1;
+
+        const schemas = {
+            "121": [
+                {r:'GK',  x: 60,  y: 300},
+                {r:'FIX', x: 220, y: 300},
+                {r:'ALA', x: 380, y: 120},
+                {r:'ALA', x: 380, y: 480},
+                {r:'PIV', x: 550, y: 300}
+            ],
+            "22": [
+                {r:'GK',  x: 60,  y: 300},
+                {r:'FIX', x: 200, y: 150},
+                {r:'FIX', x: 200, y: 450},
+                {r:'ALA', x: 450, y: 150},
+                {r:'ALA', x: 450, y: 450}
+            ],
+            "31": [
+                {r:'GK',  x: 60,  y: 300},
+                {r:'FIX', x: 180, y: 300},
+                {r:'ALA', x: 300, y: 100},
+                {r:'ALA', x: 300, y: 500},
+                {r:'PIV', x: 700, y: 300}
+            ]
+        };
+
+        return schemas[type].map(p => ({
+            role: p.role || p.r,
+            pos: new Vector(isTeamA ? p.x : 1000 - p.x, isTeamA ? p.y : p.y)
+        }));
+    }
+};
+
+// Hàm bổ trợ toán học
+function map(n, start1, stop1, start2, stop2) {
+    return ((n - start1) / (stop1 - start1)) * (stop2 - start2) + start2;
+}
+        
+    }
+};
+class Ball {
+    constructor(x, y) {
+        this.pos = new Vector(x, y);
+        this.vel = new Vector(0, 0);
+        this.friction = 0.98; // Ma sát mặt sân Futsal
+        this.owner = null;    // Quân cờ đang giữ bóng
+        this.radius = 8;
     }
 
-    function drawBall() {
-        ctx.beginPath(); ctx.arc(ball.x, ball.y, 8, 0, Math.PI*2);
-        ctx.fillStyle = "#f1c40f"; ctx.fill(); ctx.stroke();
+    update() {
+        if (this.owner) {
+            // Nếu có người giữ, bóng dính vào chân cầu thủ
+            this.pos.x = this.owner.pos.x + Math.cos(Date.now()/200)*5;
+            this.pos.y = this.owner.pos.y + Math.sin(Date.now()/200)*5;
+            this.vel = new Vector(0, 0);
+        } else {
+            // Nếu bóng tự do, áp dụng vật lý lăn
+            this.pos = this.pos.add(this.vel);
+            this.vel = this.vel.mul(this.friction);
+
+            // Kiểm tra va chạm biên dọc
+            if (this.pos.y < 30 || this.pos.y > 570) this.vel.y *= -1;
+        }
     }
 
-    function updateScore() {
-        document.getElementById('scoreA').innerText = scoreA;
-        document.getElementById('scoreB').innerText = scoreB;
+    // Lệnh chuyền bóng cho đồng đội
+    kick(targetVector, power) {
+        this.owner = null;
+        let aim = targetVector.sub(this.pos);
+        this.vel = aim.normalize().mul(power);
     }
 
-    function log(m) {
-        const c = document.getElementById('log-content');
-        c.innerHTML = `<div>[${minutes}:00] ${m}</div>` + c.innerHTML;
+    draw(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffeb3b"; // Màu vàng Futsal chuyên dụng
+        ctx.fill();
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Hiệu ứng bóng đổ và độ sáng
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "yellow";
+    }
+}
+
+// MỞ RỘNG LOGIC CHO PLAYER (Bổ sung vào Class Player đã viết ở P2)
+Player.prototype.playWithBall = function(ball, teammates, opponents) {
+    if (this.pos.dist(ball.pos) < 25 && !ball.owner) {
+        ball.owner = this;
+        this.hasBall = true;
+        FutsalApp.log(`Đội ${this.team} (${this.role}) đang kiểm soát bóng.`);
     }
 
-    function endGame() {
-        clearInterval(gameInterval);
-        alert("Kết thúc 90 phút! Tỉ số: " + scoreA + " - " + scoreB);
+    if (this.hasBall) {
+        // 1. Nếu gần khung thành đối phương -> SÚT
+        let targetGoal = this.team === 'A' ? new Vector(980, 300) : new Vector(20, 300);
+        if (this.pos.dist(targetGoal) < 300) {
+            if (Math.random() > 0.95) { // Xác suất dứt điểm
+                ball.kick(targetGoal, 15);
+                this.hasBall = false;
+                FutsalApp.log(`Cú sút từ ${this.role} đội ${this.team}!`);
+                return;
+            }
+        }
+
+        // 2. Phối hợp: Tìm đồng đội ở vị trí thuận lợi để chuyền (Phối hợp tam giác)
+        if (Math.random() > 0.97) {
+            let friend = teammates[Math.floor(Math.random() * teammates.length)];
+            if (friend.id !== this.id) {
+                ball.kick(friend.pos, 10);
+                this.hasBall = false;
+                FutsalApp.log(`${this.role} chuyền bóng cho ${friend.role}.`);
+            }
+        }
+    }
+}
+
+/**
+ * LOGIC KIỂM TRA BÀN THẮNG
+ */
+FutsalApp.checkGoal = function() {
+    let b = this.ball.pos;
+    // Khung thành bên phải (Đội A ghi bàn)
+    if (b.x > 980 && b.y > 240 && b.y < 360) {
+        this.scoreA++;
+        this.resetAfterGoal();
+        this.log("VÀOOO! Phối hợp tuyệt vời từ đội TRẮNG.");
+    }
+    // Khung thành bên trái (Đội B ghi bàn)
+    if (b.x < 20 && b.y > 240 && b.y < 360) {
+        this.scoreB++;
+        this.resetAfterGoal();
+        this.log("VÀOOO! Đội ĐỎ ghi bàn từ pha phản công.");
+    }
+}
+
+FutsalApp.resetAfterGoal = function() {
+    this.ball.pos = new Vector(500, 300);
+    this.ball.vel = new Vector(0, 0);
+    this.ball.owner = null;
+    document.getElementById('score-a').innerText = this.scoreA < 10 ? "0"+this.scoreA : this.scoreA;
+    document.getElementById('score-b').innerText = this.scoreB < 10 ? "0"+this.scoreB : this.scoreB;
+}
+// Bổ sung hàm khởi tạo cầu thủ vào FutsalApp
+FutsalApp.setupTeams = function() {
+    this.players = [];
+    const tacA = document.getElementById('select-tac-a').value;
+    const tacB = document.getElementById('select-tac-b').value;
+
+    const schemaA = TacticalManager.getFormation(tacA, 'A');
+    const schemaB = TacticalManager.getFormation(tacB, 'B');
+
+    // Khởi tạo 5 cầu thủ đội Trắng
+    schemaA.forEach((p, i) => {
+        this.players.push(new Player(i, 'A', p.role, p.pos));
+    });
+
+    // Khởi tạo 5 cầu thủ đội Đỏ
+    schemaB.forEach((p, i) => {
+        this.players.push(new Player(i + 5, 'B', p.role, p.pos));
+    });
+
+    this.ball = new Ball(this.width / 2, this.height / 2);
+};
+
+// VÒNG LẶP CHÍNH (MASTER UPDATE)
+FutsalApp.update = function() {
+    if (!this.isRunning) return;
+
+    this.frames++;
+    // Cứ 60 frames (1 giây thực tế) tính là 1 phút mô phỏng để người dùng dễ quan sát
+    if (this.frames % 60 === 0) {
+        this.matchTime++;
+        document.getElementById('match-timer').innerText = 
+            (this.matchTime < 10 ? "0" + this.matchTime : this.matchTime) + ":00";
+        
+        if (this.matchTime >= 90) {
+            this.isRunning = false;
+            this.log("KẾT THÚC TRẬN ĐẤU! Tỉ số chung cuộc: " + this.scoreA + " - " + this.scoreB);
+            return;
+        }
     }
 
-    drawPitch(); // Vẽ sân ban đầu
+    // Xử lý AI cho từng cầu thủ
+    this.players.forEach(p => {
+        const teammates = this.players.filter(other => other.team === p.team && other.id !== p.id);
+        const opponents = this.players.filter(other => other.team !== p.team);
+        
+        p.behaviors(this.ball.pos, teammates, opponents);
+        p.playWithBall(this.ball, teammates, opponents);
+        p.update();
+    });
+
+    // Cập nhật vật lý bóng
+    this.ball.update();
+    
+    // Kiểm tra bàn thắng
+    this.checkGoal();
+
+    // Render đồ họa
+    this.render();
+    
+    // Yêu cầu frame tiếp theo (60 FPS)
+    requestAnimationFrame(() => this.update());
+};
+
+// HÀM VẼ TỔNG THỂ (RENDERING)
+FutsalApp.render = function() {
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.drawPitch(); // Vẽ lại sân
+
+    // Vẽ toàn bộ cầu thủ
+    this.players.forEach(p => p.draw(this.ctx));
+
+    // Vẽ bóng
+    this.ball.draw(this.ctx);
+
+    // Hiệu ứng Visual: Vẽ đường nối nếu có cầu thủ đang cầm bóng (Tầm nhìn chiến thuật)
+    if (this.ball.owner) {
+        this.ctx.beginPath();
+        this.ctx.setLineDash([5, 5]);
+        this.ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        this.ctx.moveTo(this.ball.owner.pos.x, this.ball.owner.pos.y);
+        this.ctx.lineTo(this.ball.team === 'A' ? 980 : 20, 300); // Đường kẻ hướng khung thành
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+    }
+};
+
+// Ghi đè hàm StartMatch để kích hoạt vòng lặp
+FutsalApp.startMatch = function() {
+    this.log("Hệ thống đang tải dữ liệu chiến thuật...");
+    this.setupTeams();
+    this.isRunning = true;
+    this.matchTime = 0;
+    this.frames = 0;
+    this.scoreA = 0;
+    this.scoreB = 0;
+    document.getElementById('score-a').innerText = "00";
+    document.getElementById('score-b').innerText = "00";
+    
+    this.update(); // Kích hoạt Loop
+    this.log("TRẬN ĐẤU BẮT ĐẦU!");
+};
+        
+// Khởi chạy ứng dụng
+window.onload = () => FutsalApp.init();
 </script>
 </body>
 </html>
