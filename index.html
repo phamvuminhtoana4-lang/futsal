@@ -2,212 +2,249 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Element Wars: Final Reckoning</title>
+    <title>Element Wars: Final Fusion</title>
     <style>
         :root {
-            --bg: #05050a; --panel: #1a1a2e; --accent: #e94560;
-            --fire: #ff4757; --water: #2e86de; --earth: #2ed573;
-            --thunder: #f1c40f; --wind: #48dbfb; --dark: #5f27cd; --light: #f7f1e3;
+            --bg: #05050a; --panel: #16213e; --accent: #e94560;
+            --fire: #ff4757; --water: #2e86de; --earth: #2ed573; --thunder: #f1c40f;
+            --wind: #48dbfb; --dark: #5f27cd; --light: #f7f1e3;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
         
-        /* Dashboard */
-        .hud { display: flex; width: 100%; background: var(--panel); padding: 15px; justify-content: space-around; border-bottom: 3px solid var(--accent); position: sticky; top: 0; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .stat { font-size: 1.2rem; font-weight: bold; text-shadow: 2px 2px 4px #000; }
+        /* HUD */
+        .hud { display: flex; width: 100%; background: var(--panel); padding: 15px; justify-content: space-around; border-bottom: 3px solid var(--accent); z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+        .stat { font-size: 1.1rem; font-weight: bold; text-transform: uppercase; }
+        .gold-txt { color: #f1c40f; } .hp-txt { color: #ff4757; }
+
+        /* Main Layout */
+        .main-container { display: flex; gap: 20px; padding: 20px; width: 1200px; justify-content: center; align-items: flex-start; }
         
-        /* Layout chính */
-        .main-container { display: flex; gap: 20px; padding: 20px; max-width: 1200px; }
-        
-        /* Synergy List */
-        .synergy-list { width: 220px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
-        .syn-node { margin-bottom: 12px; padding: 5px; border-radius: 5px; transition: 0.3s; opacity: 0.4; font-size: 0.85rem; border-left: 4px solid transparent; }
-        .syn-node.active { opacity: 1; background: rgba(255,255,255,0.1); border-left-color: var(--thunder); }
+        /* Synergy Panel */
+        .synergy-list { width: 200px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; font-size: 0.8rem; }
+        .syn-item { margin-bottom: 8px; opacity: 0.3; transition: 0.3s; padding: 4px; border-radius: 4px; }
+        .syn-active { opacity: 1; background: rgba(255,255,255,0.1); border-left: 3px solid var(--thunder); }
 
         /* Board */
-        .board { display: grid; grid-template-columns: repeat(7, 80px); grid-template-rows: repeat(6, 80px); gap: 6px; background: #0f3460; padding: 10px; border-radius: 8px; box-shadow: inset 0 0 50px #000; }
-        .cell { width: 80px; height: 80px; background: rgba(255,255,255,0.03); border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; border: 1px solid rgba(255,255,255,0.05); }
-        .cell.enemy { background: rgba(233, 69, 96, 0.05); }
-        
-        /* Units */
-        .unit { width: 70px; height: 70px; border-radius: 15px; position: absolute; cursor: grab; transition: transform 0.2s, top 0.3s, left 0.3s; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold; border: 2px solid rgba(255,255,255,0.2); }
-        .unit:active { cursor: grabbing; z-index: 1000; }
-        .unit .hp-bar { width: 80%; height: 5px; background: #444; border-radius: 3px; margin-top: 5px; position: relative; }
-        .unit .hp-val { height: 100%; background: #2ecc71; width: 100%; transition: width 0.3s; }
-        .unit .mp-bar { width: 80%; height: 4px; background: #444; border-radius: 2px; margin-top: 2px; }
-        .unit .mp-val { height: 100%; background: #a29bfe; width: 0%; transition: width 0.3s; }
-        .unit-star { color: gold; position: absolute; top: 2px; font-size: 12px; }
+        .board { display: grid; grid-template-columns: repeat(7, 80px); grid-template-rows: repeat(6, 80px); gap: 6px; background: #0f3460; padding: 12px; border-radius: 12px; border: 4px solid #1a1a2e; position: relative; }
+        .cell { width: 80px; height: 80px; background: rgba(255,255,255,0.02); border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; }
+        .cell.enemy-zone { background: rgba(233, 69, 96, 0.05); }
+        .cell.highlight { background: rgba(255, 255, 255, 0.1); }
 
-        /* Màu theo tộc */
-        .fire { background: linear-gradient(135deg, #ff4757, #ff6b81); box-shadow: 0 0 15px var(--fire); }
-        .water { background: linear-gradient(135deg, #2e86de, #54a0ff); box-shadow: 0 0 15px var(--water); }
-        .earth { background: linear-gradient(135deg, #2ed573, #7bed9f); box-shadow: 0 0 15px var(--earth); }
-        .thunder { background: linear-gradient(135deg, #f1c40f, #eccc68); box-shadow: 0 0 15px var(--thunder); }
-        .wind { background: linear-gradient(135deg, #48dbfb, #0abde3); box-shadow: 0 0 15px var(--wind); }
-        .dark { background: linear-gradient(135deg, #5f27cd, #341f97); box-shadow: 0 0 15px var(--dark); }
-        .light { background: linear-gradient(135deg, #f7f1e3, #d1ccc0); color: #333; box-shadow: 0 0 15px var(--light); }
+        /* Unit & Bars */
+        .unit { width: 70px; height: 70px; border-radius: 10px; position: absolute; cursor: grab; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid rgba(255,255,255,0.2); transition: transform 0.2s, top 0.4s, left 0.4s; }
+        .unit.ult-ready { animation: pulse-gold 0.8s infinite; border-color: gold; }
+        @keyframes pulse-gold { 0% { box-shadow: 0 0 0px gold; } 50% { box-shadow: 0 0 15px gold; } 100% { box-shadow: 0 0 0px gold; } }
 
-        /* Control Panel */
-        .controls { margin-top: 20px; display: flex; gap: 20px; align-items: flex-end; }
-        .shop { display: flex; gap: 10px; background: var(--panel); padding: 15px; border-radius: 15px; border: 2px solid #333; }
-        .shop-item { width: 110px; height: 150px; background: #0f3460; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; transition: 0.2s; position: relative; }
-        .shop-item:hover { border-color: var(--accent); transform: scale(1.05); }
-        .shop-item b { font-size: 0.9rem; margin-bottom: 5px; }
-        .shop-item span { font-size: 0.75rem; color: #ccc; text-align: center; padding: 0 5px; }
-        .price { color: #f1c40f; font-weight: bold; margin-top: 10px; }
+        .hp-bar { width: 85%; height: 5px; background: #333; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+        .hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: width 0.3s; }
+        .mp-bar { width: 85%; height: 3px; background: #333; margin-top: 2px; border-radius: 2px; }
+        .mp-fill { height: 100%; background: #a29bfe; width: 0%; transition: width 0.3s; }
+        .unit-star { color: gold; position: absolute; top: 1px; font-size: 11px; }
+        .items-icons { position: absolute; bottom: 12px; font-size: 10px; }
 
-        .btn-group { display: flex; flex-direction: column; gap: 10px; }
-        .btn { padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; text-transform: uppercase; }
-        .btn-exp { background: #5f27cd; }
-        .btn-roll { background: #16213e; border: 1px solid #555; }
-        .btn-fight { background: var(--accent); font-size: 1.2rem; }
-        .btn:hover:not(:disabled) { filter: brightness(1.2); }
-        .btn:disabled { background: #333; cursor: not-allowed; }
+        /* VFX */
+        .vfx-text { position: absolute; font-weight: bold; pointer-events: none; animation: float-up 0.8s forwards; z-index: 100; font-size: 14px; }
+        @keyframes float-up { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
 
-        #log { color: #aaa; font-style: italic; height: 25px; margin-bottom: 10px; }
+        /* Types */
+        .fire { background: var(--fire); } .water { background: var(--water); } .earth { background: var(--earth); }
+        .thunder { background: var(--thunder); color: #000; } .wind { background: var(--wind); } 
+        .dark { background: var(--dark); } .light { background: var(--light); color: #333; }
+
+        /* Shop Area */
+        .shop-area { display: flex; flex-direction: column; gap: 10px; }
+        .shop { display: flex; gap: 10px; background: var(--panel); padding: 15px; border-radius: 12px; border: 2px solid #333; }
+        .shop-slot { width: 105px; height: 140px; background: #0f3460; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; transition: 0.2s; text-align: center; }
+        .shop-slot:hover { border-color: var(--accent); transform: translateY(-3px); }
+        .shop-slot.empty { background: rgba(0,0,0,0.4); border: 1px dashed #444; pointer-events: none; opacity: 0.2; }
+        .price { color: #f1c40f; font-weight: bold; margin-top: 8px; }
+
+        /* Controls */
+        .sell-zone { width: 100%; height: 40px; background: rgba(233, 69, 96, 0.1); border: 2px dashed var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--accent); font-size: 0.9rem; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-roll { background: #533483; } .btn-exp { background: #341f97; } .btn-fight { background: var(--accent); font-size: 1.1rem; box-shadow: 0 4px 10px rgba(233, 69, 96, 0.4); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #msg-log { height: 25px; color: #f1c40f; font-weight: bold; text-align: center; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
 <div class="hud">
-    <div class="stat gold">💰 Vàng: <span id="gold">15</span>G</div>
-    <div class="stat hp">❤️ HP: <span id="hp">100</span></div>
-    <div class="stat level">⭐ Cấp: <span id="lvl">1</span> (<span id="cur-units">0</span>/<span id="max-units">1</span>)</div>
-    <div class="stat round">⚔️ Vòng: <span id="round">1</span></div>
-    <div class="stat streak" id="streak-info">🔥 Chuỗi: 0</div>
+    <div class="stat gold-txt">💰 Vàng: <span id="gold">20</span>G</div>
+    <div class="stat hp-txt">❤️ Máu: <span id="hp">100</span></div>
+    <div class="stat">⭐ Cấp: <span id="lvl">1</span> (<span id="pop">0</span>/<span id="max-pop">1</span>)</div>
+    <div class="stat">⚔️ Vòng: <span id="round">1</span></div>
 </div>
 
 <div class="main-container">
-    <div class="synergy-list" id="synergies">
-        </div>
+    <div class="synergy-list" id="synergies"></div>
 
-    <div id="game-wrap">
-        <div id="log">Chào mừng đến với Element Wars: Final Reckoning!</div>
+    <div id="game-center">
+        <div id="msg-log">Sắp xếp đội hình và chiến đấu!</div>
         <div class="board" id="board"></div>
-
-        <div class="controls">
+        
+        <div class="shop-area">
             <div class="shop" id="shop"></div>
-            <div class="btn-group">
-                <button class="btn btn-exp" onclick="buyExp()">Lên Cấp (4G)</button>
-                <button class="btn btn-roll" onclick="refreshShop()">Làm mới (2G)</button>
-                <button class="btn btn-fight" id="fight-btn" onclick="startCombat()">BẮT ĐẦU CHIẾN ĐẤU</button>
+            <div style="display:flex; gap:10px;">
+                <div class="sell-zone" id="sell-zone">KÉO VÀO ĐÂY ĐỂ BÁN (2G)</div>
+                <div class="sell-zone" id="item-zone" style="color: #48dbfb; border-color: #48dbfb; background: rgba(72, 219, 251, 0.1);">KHO ĐỒ: <span id="inventory-count">0</span></div>
+            </div>
+            <div style="display:flex; gap:10px; justify-content: center;">
+                <button class="btn btn-exp" onclick="buyExp()">LÊN CẤP (4G)</button>
+                <button class="btn btn-roll" onclick="rollShop()">LÀM MỚI (2G)</button>
+                <button class="btn btn-fight" id="fight-btn" onclick="startCombat()">XUẤT QUÂN!</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const DATA = {
+    const CONFIG = {
         TYPES: {
-            fire: { n: 'Hỏa', c: 'fire', hp: 100, atk: 35, mpMax: 100, desc: 'Nổ diện rộng' },
-            water: { n: 'Thủy', c: 'water', hp: 160, atk: 15, mpMax: 80, desc: 'Đóng băng' },
-            earth: { n: 'Thổ', c: 'earth', hp: 280, atk: 12, mpMax: 120, desc: 'Khiên phản đam' },
-            thunder: { n: 'Lôi', c: 'thunder', hp: 90, atk: 25, mpMax: 60, desc: 'Giật sét chuỗi' },
-            wind: { n: 'Phong', c: 'wind', hp: 110, atk: 20, mpMax: 100, desc: 'Né tránh' },
-            dark: { n: 'Ám', c: 'dark', hp: 130, atk: 30, mpMax: 100, desc: 'Hút máu' },
-            light: { n: 'Quang', c: 'light', hp: 120, atk: 18, mpMax: 150, desc: 'Hồi sinh/Buff' }
+            fire: { n: 'Hỏa', c: 'fire', hp: 120, atk: 45, mpM: 100, s: 'Bộc Phá' },
+            water: { n: 'Thủy', c: 'water', hp: 200, atk: 20, mpM: 80, s: 'Hồi Xuân' },
+            earth: { n: 'Thổ', c: 'earth', hp: 380, atk: 15, mpM: 120, s: 'Thạch Giáp' },
+            thunder: { n: 'Lôi', c: 'thunder', hp: 110, atk: 35, mpM: 70, s: 'Tê Liệt' },
+            wind: { n: 'Phong', c: 'wind', hp: 140, atk: 25, mpM: 90, s: 'Ảnh Tử' },
+            dark: { n: 'Ám', c: 'dark', hp: 150, atk: 35, mpM: 100, s: 'Ma Hút' },
+            light: { n: 'Quang', c: 'light', hp: 130, atk: 22, mpM: 140, s: 'Thánh Quang' }
         },
         SYNERGIES: {
-            fire: { req: 3, bonus: 'Toàn đội +40% Công' },
-            water: { req: 3, bonus: 'Hồi 8% máu mỗi giây' },
-            earth: { req: 3, bonus: 'Toàn đội +50 Giáp' },
-            thunder: { req: 2, bonus: 'Tăng 50% Tốc đánh' },
-            wind: { req: 2, bonus: '30% cơ hội né đòn' },
-            dark: { req: 2, bonus: 'Hút 40% sát thương' },
-            light: { req: 2, bonus: 'Nhận 1 lá chắn khởi đầu' }
-        }
+            fire: { req: 3, b: 'Toàn đội +40% Công' },
+            water: { req: 3, b: 'Hồi 10% HP mỗi turn' },
+            earth: { req: 3, b: 'Giảm 30% sát thương nhận' },
+            thunder: { req: 2, b: 'Tăng 50% Mana khởi đầu' }
+        },
+        ITEMS: [
+            { n: 'Kiếm', atk: 20, hp: 0, i: '⚔️' },
+            { n: 'Giáp', atk: 0, hp: 150, i: '🛡️' },
+            { n: 'Trượng', atk: 10, hp: 50, i: '🪄' }
+        ]
     };
 
     let G = {
-        gold: 15, hp: 100, lvl: 1, exp: 0, round: 1, streak: 0,
-        units: [], enemies: [], isCombat: false,
-        maxUnits: () => G.lvl
+        gold: 20, hp: 100, round: 1, lvl: 1, exp: 0,
+        units: [], enemies: [], shop: [], inventory: [],
+        isCombat: false
     };
 
-    function initBoard() {
+    function init() {
         const board = document.getElementById('board');
         board.innerHTML = '';
         for (let y = 0; y < 6; y++) {
             for (let x = 0; x < 7; x++) {
                 const cell = document.createElement('div');
-                cell.className = `cell ${y < 3 ? 'enemy' : ''}`;
+                cell.className = `cell ${y < 3 ? 'enemy-zone' : ''}`;
                 cell.id = `cell-${x}-${y}`;
-                cell.ondragover = e => e.preventDefault();
+                cell.ondragover = e => { e.preventDefault(); cell.classList.add('highlight'); };
+                cell.ondragleave = () => cell.classList.remove('highlight');
                 cell.ondrop = e => handleDrop(e, x, y);
+                cell.onclick = () => useItemOnUnit(x, y);
                 board.appendChild(cell);
             }
         }
+        
+        document.getElementById('sell-zone').ondragover = e => e.preventDefault();
+        document.getElementById('sell-zone').ondrop = e => {
+            const id = e.dataTransfer.getData('uid');
+            const u = G.units.find(un => un.id == id);
+            if (u) {
+                G.units = G.units.filter(un => un.id != id);
+                G.gold += 2; log("Đã bán quân! +2G");
+                render(); updateUI();
+            }
+        };
+
+        rollShop(true);
+    }
+
+    function rollShop(free = false) {
+        if (!free && G.gold < 2) return;
+        if (!free) G.gold -= 2;
+        G.shop = [];
+        const keys = Object.keys(CONFIG.TYPES);
+        for(let i=0; i<5; i++) {
+            const t = keys[Math.floor(Math.random()*7)];
+            G.shop.push({ ...CONFIG.TYPES[t], type: t, id: Math.random() });
+        }
+        renderShop(); updateUI();
     }
 
     function renderShop() {
-        const shop = document.getElementById('shop');
-        shop.innerHTML = '';
-        const keys = Object.keys(DATA.TYPES);
-        for (let i = 0; i < 5; i++) {
-            const type = keys[Math.floor(Math.random() * keys.length)];
-            const d = DATA.TYPES[type];
-            const item = document.createElement('div');
-            item.className = 'shop-item';
-            item.innerHTML = `<b>${d.n}</b><span>${d.desc}</span><div class="price">3G</div>`;
-            item.onclick = () => buyUnit(type);
-            shop.appendChild(item);
-        }
+        const el = document.getElementById('shop');
+        el.innerHTML = '';
+        G.shop.forEach((item, i) => {
+            const slot = document.createElement('div');
+            slot.className = `shop-slot ${!item ? 'empty' : ''}`;
+            if (item) {
+                slot.innerHTML = `<b>${item.n}</b><small>${item.s}</small><div class="price">3G</div>`;
+                slot.onclick = () => buyUnit(i);
+            }
+            el.appendChild(slot);
+        });
     }
 
-    function buyUnit(type) {
-        if (G.gold < 3 || G.isCombat) return;
-        // Tìm ô trống hàng chờ (hàng 5)
+    function buyUnit(i) {
+        const item = G.shop[i];
+        if (!item || G.gold < 3 || G.isCombat) return;
         for (let x = 0; x < 7; x++) {
             if (!G.units.find(u => u.x === x && u.y === 5)) {
                 G.gold -= 3;
-                const unit = { ...DATA.TYPES[type], type, x, y: 5, star: 1, curHp: DATA.TYPES[type].hp, mp: 0, id: Math.random() };
-                G.units.push(unit);
-                checkUpgrade();
-                render();
-                updateUI();
+                G.units.push({ ...item, x, y: 5, star: 1, curHp: item.hp, curMp: 0, items: '', stun:0, shield:0 });
+                G.shop[i] = null;
+                checkEvo(); renderShop(); render(); updateUI();
                 return;
             }
         }
-        msg("Hàng chờ đã đầy!");
+        log("Hàng chờ đã đầy!");
     }
 
-    function checkUpgrade() {
+    function checkEvo() {
         const groups = {};
-        G.units.forEach(u => {
-            const k = `${u.type}_${u.star}`;
-            groups[k] = (groups[k] || []);
-            groups[k].push(u);
-        });
+        G.units.forEach(u => { const k = `${u.type}_${u.star}`; groups[k] = (groups[k] || []); groups[k].push(u); });
         for (let k in groups) {
             if (groups[k].length >= 3) {
-                const first = groups[k][0];
+                const f = groups[k][0];
                 G.units = G.units.filter(u => !groups[k].slice(0, 3).includes(u));
-                G.units.push({
-                    ...DATA.TYPES[first.type], type: first.type, x: first.x, y: first.y, star: first.star + 1,
-                    hp: first.hp * 2.4, atk: first.atk * 2.1, curHp: first.hp * 2.4, mp: 0, id: Math.random()
-                });
-                msg("CẤP SAO MỚI! Sức mạnh vượt trội.");
-                checkUpgrade();
+                G.units.push({ ...CONFIG.TYPES[f.type], type: f.type, x: f.x, y: f.y, star: f.star+1, 
+                    hp: f.hp*2.4, atk: f.atk*2.1, curHp: f.hp*2.4, curMp: 0, items: f.items, stun:0, shield:0, id: Math.random() });
+                log("TIẾN HÓA CẤP SAO!");
+                checkEvo();
             }
         }
     }
 
     function buyExp() {
-        if (G.gold >= 4 && G.lvl < 8) { G.gold -= 4; G.exp += 4; if (G.exp >= G.lvl * 4) { G.exp = 0; G.lvl++; } updateUI(); }
+        if (G.gold >= 4 && G.lvl < 8) {
+            G.gold -= 4; G.exp += 4;
+            if (G.exp >= G.lvl * 4) { G.exp = 0; G.lvl++; }
+            updateUI();
+        }
     }
 
-    function refreshShop() { if (G.gold >= 2 && !G.isCombat) { G.gold -= 2; renderShop(); updateUI(); } }
-
     function handleDrop(e, x, y) {
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('highlight'));
         const id = e.dataTransfer.getData('uid');
         const unit = G.units.find(u => u.id == id);
+        if (unit && y >= 3) {
+            const onBoard = G.units.filter(u => u.y < 5).length;
+            if (unit.y === 5 && y < 5 && onBoard >= G.lvl) { log("Cần lên Cấp để thêm quân!"); return; }
+            unit.x = x; unit.y = y;
+            render(); updateUI();
+        }
+    }
+
+    function useItemOnUnit(x, y) {
+        if (G.inventory.length === 0 || G.isCombat) return;
+        const unit = G.units.find(u => u.x === x && u.y === y);
         if (unit) {
-            // Kiểm tra số quân trên bàn (y < 5)
-            const unitsOnBoard = G.units.filter(u => u.y < 5).length;
-            if (y < 5 && unit.y === 5 && unitsOnBoard >= G.maxUnits()) {
-                msg("Vượt quá giới hạn quân số!");
-                return;
-            }
-            if (y >= 3) { unit.x = x; unit.y = y; render(); updateUI(); }
+            const item = G.inventory.shift();
+            unit.atk += item.atk;
+            unit.hp += item.hp; unit.curHp += item.hp;
+            unit.items += item.i;
+            log(`Đã lắp ${item.n} cho ${unit.n}!`);
+            render(); updateUI();
         }
     }
 
@@ -217,36 +254,15 @@
             const cell = document.getElementById(`cell-${u.x}-${u.y}`);
             if (!cell) return;
             const el = document.createElement('div');
-            el.className = `unit ${u.c}`;
+            el.className = `unit ${u.c} ${u.curMp >= u.mpM ? 'ult-ready' : ''}`;
             el.draggable = !G.isCombat;
             el.innerHTML = `<div class="unit-star">${'★'.repeat(u.star)}</div>${u.n}
-                <div class="hp-bar"><div class="hp-val" style="width:${(u.curHp/u.hp)*100}%"></div></div>
-                <div class="mp-bar"><div class="mp-val" style="width:${(u.mp/u.mpMax)*100}%"></div></div>`;
+                <div class="hp-bar"><div class="hp-fill" style="width:${(u.curHp/u.hp)*100}%; ${u.shield > 0 ? 'background:white' : ''}"></div></div>
+                <div class="mp-bar"><div class="mp-fill" style="width:${(u.curMp/u.mpM)*100}%"></div></div>
+                <div class="items-icons">${u.items}</div>`;
             el.ondragstart = e => e.dataTransfer.setData('uid', u.id);
             cell.appendChild(el);
         });
-    }
-
-    function updateUI() {
-        document.getElementById('gold').innerText = G.gold;
-        document.getElementById('hp').innerText = G.hp;
-        document.getElementById('lvl').innerText = G.lvl;
-        document.getElementById('round').innerText = G.round;
-        document.getElementById('cur-units').innerText = G.units.filter(u => u.y < 5).length;
-        document.getElementById('max-units').innerText = G.maxUnits();
-        
-        const synBox = document.getElementById('synergies');
-        synBox.innerHTML = '';
-        const counts = {};
-        G.units.filter(u => u.y < 5).forEach(u => counts[u.type] = (counts[u.type] || 0) + 1);
-        
-        for (let s in DATA.SYNERGIES) {
-            const data = DATA.SYNERGIES[s];
-            const active = (counts[s] || 0) >= data.req;
-            synBox.innerHTML += `<div class="syn-node ${active ? 'active' : ''}">
-                <b>${DATA.TYPES[s].n} (${counts[s] || 0}/${data.req})</b><br>${data.bonus}
-            </div>`;
-        }
     }
 
     async function startCombat() {
@@ -254,92 +270,125 @@
         G.isCombat = true;
         document.getElementById('fight-btn').disabled = true;
 
-        // Tạo kẻ địch theo round (AI đơn giản)
         G.enemies = [];
-        for (let i = 0; i < Math.min(G.round + 1, 10); i++) {
-            const type = Object.keys(DATA.TYPES)[Math.floor(Math.random()*7)];
-            G.enemies.push({
-                ...DATA.TYPES[type], type, x: i % 7, y: Math.floor(i / 7),
-                star: G.round > 5 ? 2 : 1, curHp: DATA.TYPES[type].hp * (1 + G.round*0.25),
-                atk: DATA.TYPES[type].atk * (1 + G.round*0.15), mp: 0, id: Math.random()
-            });
+        const count = Math.min(G.round + 1, 10);
+        for(let i=0; i<count; i++){
+            const t = Object.keys(CONFIG.TYPES)[Math.floor(Math.random()*7)];
+            G.enemies.push({ ...CONFIG.TYPES[t], type: t, x: i%7, y: Math.floor(i/7), star: G.round > 5 ? 2 : 1, 
+                hp: CONFIG.TYPES[t].hp * (1+G.round*0.2), atk: CONFIG.TYPES[t].atk * (1+G.round*0.1), 
+                curHp: CONFIG.TYPES[t].hp * (1+G.round*0.2), curMp: 0, items: '', stun: 0, shield: 0, id: Math.random() });
         }
         render();
 
-        while (G.units.filter(u => u.y < 5).length > 0 && G.enemies.length > 0) {
-            // Tính toán Synergy Active
-            const counts = {};
-            G.units.filter(u => u.y < 5).forEach(u => counts[u.type] = (counts[u.type] || 0) + 1);
+        while(G.units.filter(u=>u.y < 5).length > 0 && G.enemies.length > 0) {
+            const syn = getSyn();
             
-            // Player Attack
-            G.units.filter(u => u.y < 5).forEach(u => {
-                const target = G.enemies[0];
-                if (!target) return;
+            G.units.filter(u=>u.y < 5).forEach(u => {
+                if (u.stun > 0) { u.stun--; return; }
+                const target = G.enemies[0]; if (!target) return;
                 
-                let dmg = u.atk;
-                if (counts.fire >= 3) dmg *= 1.4;
-                if (counts.dark >= 2) u.curHp = Math.min(u.hp, u.curHp + dmg * 0.4);
+                let d = u.atk * (syn.fire ? 1.4 : 1);
+                dealDmg(u, target, d);
+                if (syn.water) u.curHp = Math.min(u.hp, u.curHp + u.hp*0.05);
                 
-                target.curHp -= dmg;
-                u.mp = Math.min(u.mpMax, u.mp + 20);
-                if (u.mp >= u.mpMax) { // Kỹ năng đặc biệt
-                    target.curHp -= dmg * 2;
-                    u.mp = 0;
-                    msg(`${u.n} tung TUYỆT CHIÊU!`);
-                }
+                u.curMp = Math.min(u.mpM, u.curMp + (syn.thunder ? 30 : 20));
+                if (u.curMp >= u.mpM) castSkill(u, G.enemies, G.units.filter(u=>u.y<5));
+            });
+
+            G.enemies.forEach(e => {
+                if (e.stun > 0) { e.stun--; return; }
+                const targets = G.units.filter(u=>u.y < 5); if (targets.length === 0) return;
+                const t = targets[Math.floor(Math.random()*targets.length)];
+                
+                let d = e.atk;
+                if (syn.earth) d *= 0.7;
+                dealDmg(e, t, d);
+                e.curMp = Math.min(e.mpM, e.curMp + 20);
+                if (e.curMp >= e.mpM) castSkill(e, G.units.filter(u=>u.y<5), G.enemies);
             });
 
             G.enemies = G.enemies.filter(e => e.curHp > 0);
-
-            // Enemy Attack
-            G.enemies.forEach(e => {
-                const targets = G.units.filter(u => u.y < 5);
-                if (targets.length === 0) return;
-                const target = targets[Math.floor(Math.random()*targets.length)];
-                
-                let finalDmg = e.atk;
-                if (counts.earth >= 3) finalDmg = Math.max(1, finalDmg - 20);
-                if (counts.wind >= 2 && Math.random() < 0.3) finalDmg = 0;
-                
-                target.curHp -= finalDmg;
-                target.mp = Math.min(target.mpMax, target.mp + 10); // Mana khi bị đánh
-            });
-
-            G.units = G.units.filter(u => u.y >= 5 || u.curHp > 0);
+            G.units = G.units.filter(u => u.y === 5 || u.curHp > 0);
             render();
-            await new Promise(r => setTimeout(r, 400));
+            await new Promise(r => setTimeout(r, 500));
         }
         endCombat();
+    }
+
+    function getSyn() {
+        const counts = {};
+        G.units.filter(u=>u.y < 5).forEach(u => counts[u.type] = (counts[u.type] || 0) + 1);
+        return {
+            fire: counts.fire >= 3, water: counts.water >= 3,
+            earth: counts.earth >= 3, thunder: counts.thunder >= 2
+        };
+    }
+
+    function dealDmg(a, v, d) {
+        if (v.shield > 0) { v.shield--; spawnVFX(v, "🛡️ Né", "white"); return; }
+        v.curHp -= d; v.curMp = Math.min(v.mpM, v.curMp + 10);
+        spawnVFX(v, `-${Math.floor(d)}`, "red");
+    }
+
+    function castSkill(u, enemies, allies) {
+        u.curMp = 0;
+        if (u.type === 'fire') { enemies[0].curHp -= u.atk * 2; log("BỘC PHÁ!"); }
+        else if (u.type === 'water') { allies.forEach(a => a.curHp = Math.min(a.hp, a.curHp + 50)); log("HỒI XUÂN!"); }
+        else if (u.type === 'earth') { u.shield = 2; log("THẠCH GIÁP!"); }
+        else if (u.type === 'thunder') { enemies[0].stun = 2; log("TÊ LIỆT!"); }
+        else if (u.type === 'dark') { u.curHp = Math.min(u.hp, u.curHp + u.atk); log("MA HÚT!"); }
+        else { enemies[0].curHp -= u.atk; log("TẤN CÔNG!"); }
+    }
+
+    function spawnVFX(u, t, c) {
+        const cell = document.getElementById(`cell-${u.x}-${u.y}`);
+        if (!cell) return;
+        const v = document.createElement('div'); v.className = 'vfx-text';
+        v.style.color = c; v.innerText = t;
+        cell.appendChild(v); setTimeout(() => v.remove(), 800);
     }
 
     function endCombat() {
         G.isCombat = false;
         document.getElementById('fight-btn').disabled = false;
-        if (G.units.filter(u => u.y < 5).length > 0) {
-            msg("CHIẾN THẮNG! Vàng nhận được: 6 + Lợi tức");
+        if (G.enemies.length === 0) {
+            log("THẮNG! Nhận vật phẩm.");
             G.gold += 6 + Math.floor(G.gold * 0.1);
+            G.inventory.push(CONFIG.ITEMS[Math.floor(Math.random()*3)]);
             G.round++;
-            G.streak = Math.max(1, G.streak + 1);
         } else {
-            msg("THẤT BẠI! Bạn mất HP.");
-            G.hp -= 10 + G.round;
-            G.streak = Math.min(-1, G.streak - 1);
+            const d = G.enemies.length * 10; G.hp -= d;
+            log(`THUA! Mất ${d} HP`);
         }
-        
-        G.units.forEach(u => { u.curHp = u.hp; u.mp = 0; });
-        if (G.hp <= 0) { alert("TRÒ CHƠI KẾT THÚC! Vòng đạt được: " + G.round); location.reload(); }
-        
-        renderShop();
-        render();
-        updateUI();
-        document.getElementById('streak-info').innerText = "🔥 Chuỗi: " + G.streak;
+        G.units.forEach(u => { u.curHp = u.hp; u.curMp = 0; u.stun = 0; u.shield = 0; });
+        if (G.hp <= 0) { alert("GAME OVER!"); location.reload(); }
+        updateUI(); rollShop(true); render();
     }
 
-    function msg(m) { document.getElementById('log').innerText = m; }
+    function updateUI() {
+        document.getElementById('gold').innerText = G.gold;
+        document.getElementById('hp').innerText = G.hp;
+        document.getElementById('lvl').innerText = G.lvl;
+        document.getElementById('round').innerText = G.round;
+        document.getElementById('pop').innerText = G.units.filter(u=>u.y < 5).length;
+        document.getElementById('max-pop').innerText = G.lvl;
+        document.getElementById('inventory-count').innerText = G.inventory.length;
 
-    initBoard();
-    renderShop();
-    updateUI();
+        const counts = {};
+        G.units.filter(u=>u.y < 5).forEach(u => counts[u.type] = (counts[u.type] || 0) + 1);
+        const synEl = document.getElementById('synergies');
+        synEl.innerHTML = '<b>TỘC HỆ:</b><br>';
+        for(let s in CONFIG.SYNERGIES) {
+            const active = (counts[s]||0) >= CONFIG.SYNERGIES[s].req;
+            synEl.innerHTML += `<div class="syn-item ${active?'syn-active':''}">
+                ${s.toUpperCase()} (${counts[s]||0}/${CONFIG.SYNERGIES[s].req})<br>${CONFIG.SYNERGIES[s].b}
+            </div>`;
+        }
+    }
+
+    function log(m) { document.getElementById('msg-log').innerText = m; }
+
+    init();
 </script>
 </body>
 </html>
