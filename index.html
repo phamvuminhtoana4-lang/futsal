@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Element Wars: Final Fusion</title>
+    <title>Element Wars: Final Fusion - Ultimate NPC</title>
     <style>
         :root {
             --bg: #05050a; --panel: #16213e; --accent: #e94560;
@@ -30,8 +30,16 @@
         .cell.enemy-zone { background: rgba(233, 69, 96, 0.05); }
         .cell.highlight { background: rgba(255, 255, 255, 0.1); }
 
-        /* Unit & Bars */
-        .unit { width: 70px; height: 70px; border-radius: 10px; position: absolute; cursor: grab; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid rgba(255,255,255,0.2); transition: transform 0.2s, top 0.4s, left 0.4s; }
+        /* Unit & VFX */
+        .unit { width: 70px; height: 70px; border-radius: 10px; position: absolute; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid rgba(255,255,255,0.2); transition: transform 0.2s, top 0.4s, left 0.4s, opacity 0.5s; }
+        
+        /* Hiệu ứng quân địch rơi xuống */
+        .enemy-unit { animation: dropIn 0.6s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        @keyframes dropIn {
+            from { transform: translateY(-500px) scale(2); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
         .unit.ult-ready { animation: pulse-gold 0.8s infinite; border-color: gold; }
         @keyframes pulse-gold { 0% { box-shadow: 0 0 0px gold; } 50% { box-shadow: 0 0 15px gold; } 100% { box-shadow: 0 0 0px gold; } }
 
@@ -42,21 +50,20 @@
         .unit-star { color: gold; position: absolute; top: 1px; font-size: 11px; }
         .items-icons { position: absolute; bottom: 12px; font-size: 10px; }
 
-        /* VFX */
         .vfx-text { position: absolute; font-weight: bold; pointer-events: none; animation: float-up 0.8s forwards; z-index: 100; font-size: 14px; }
         @keyframes float-up { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
 
-        /* Types */
+        /* Tộc hệ màu sắc */
         .fire { background: var(--fire); } .water { background: var(--water); } .earth { background: var(--earth); }
         .thunder { background: var(--thunder); color: #000; } .wind { background: var(--wind); } 
         .dark { background: var(--dark); } .light { background: var(--light); color: #333; }
 
         /* Shop Area */
-        .shop-area { display: flex; flex-direction: column; gap: 10px; }
-        .shop { display: flex; gap: 10px; background: var(--panel); padding: 15px; border-radius: 12px; border: 2px solid #333; }
+        .shop-area { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        .shop { display: flex; gap: 10px; background: var(--panel); padding: 15px; border-radius: 12px; border: 2px solid #333; justify-content: center; }
         .shop-slot { width: 105px; height: 140px; background: #0f3460; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; transition: 0.2s; text-align: center; }
         .shop-slot:hover { border-color: var(--accent); transform: translateY(-3px); }
-        .shop-slot.empty { background: rgba(0,0,0,0.4); border: 1px dashed #444; pointer-events: none; opacity: 0.2; }
+        .shop-slot.empty { background: rgba(0,0,0,0.4); border: 1px dashed #444; pointer-events: none; opacity: 0.1; }
         .price { color: #f1c40f; font-weight: bold; margin-top: 8px; }
 
         /* Controls */
@@ -86,7 +93,7 @@
         
         <div class="shop-area">
             <div class="shop" id="shop"></div>
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:10px; margin: 10px 0;">
                 <div class="sell-zone" id="sell-zone">KÉO VÀO ĐÂY ĐỂ BÁN (2G)</div>
                 <div class="sell-zone" id="item-zone" style="color: #48dbfb; border-color: #48dbfb; background: rgba(72, 219, 251, 0.1);">KHO ĐỒ: <span id="inventory-count">0</span></div>
             </div>
@@ -102,13 +109,13 @@
 <script>
     const CONFIG = {
         TYPES: {
-            fire: { n: 'Hỏa', c: 'fire', hp: 120, atk: 45, mpM: 100, s: 'Bộc Phá' },
-            water: { n: 'Thủy', c: 'water', hp: 200, atk: 20, mpM: 80, s: 'Hồi Xuân' },
-            earth: { n: 'Thổ', c: 'earth', hp: 380, atk: 15, mpM: 120, s: 'Thạch Giáp' },
-            thunder: { n: 'Lôi', c: 'thunder', hp: 110, atk: 35, mpM: 70, s: 'Tê Liệt' },
-            wind: { n: 'Phong', c: 'wind', hp: 140, atk: 25, mpM: 90, s: 'Ảnh Tử' },
-            dark: { n: 'Ám', c: 'dark', hp: 150, atk: 35, mpM: 100, s: 'Ma Hút' },
-            light: { n: 'Quang', c: 'light', hp: 130, atk: 22, mpM: 140, s: 'Thánh Quang' }
+            fire: { n: 'Hỏa', c: 'fire', hp: 130, atk: 50, mpM: 100, s: 'Bộc Phá' },
+            water: { n: 'Thủy', c: 'water', hp: 220, atk: 25, mpM: 80, s: 'Hồi Xuân' },
+            earth: { n: 'Thổ', c: 'earth', hp: 400, atk: 18, mpM: 120, s: 'Thạch Giáp' },
+            thunder: { n: 'Lôi', c: 'thunder', hp: 110, atk: 40, mpM: 70, s: 'Tê Liệt' },
+            wind: { n: 'Phong', c: 'wind', hp: 150, atk: 30, mpM: 90, s: 'Ảnh Tử' },
+            dark: { n: 'Ám', c: 'dark', hp: 160, atk: 40, mpM: 100, s: 'Ma Hút' },
+            light: { n: 'Quang', c: 'light', hp: 140, atk: 25, mpM: 140, s: 'Thánh Quang' }
         },
         SYNERGIES: {
             fire: { req: 3, b: 'Toàn đội +40% Công' },
@@ -117,9 +124,9 @@
             thunder: { req: 2, b: 'Tăng 50% Mana khởi đầu' }
         },
         ITEMS: [
-            { n: 'Kiếm', atk: 20, hp: 0, i: '⚔️' },
-            { n: 'Giáp', atk: 0, hp: 150, i: '🛡️' },
-            { n: 'Trượng', atk: 10, hp: 50, i: '🪄' }
+            { n: 'Kiếm', atk: 25, hp: 0, i: '⚔️' },
+            { n: 'Giáp', atk: 0, hp: 200, i: '🛡️' },
+            { n: 'Trượng', atk: 15, hp: 80, i: '🪄' }
         ]
     };
 
@@ -155,7 +162,6 @@
                 render(); updateUI();
             }
         };
-
         rollShop(true);
     }
 
@@ -191,7 +197,7 @@
         for (let x = 0; x < 7; x++) {
             if (!G.units.find(u => u.x === x && u.y === 5)) {
                 G.gold -= 3;
-                G.units.push({ ...item, x, y: 5, star: 1, curHp: item.hp, curMp: 0, items: '', stun:0, shield:0 });
+                G.units.push({ ...item, x, y: 5, star: 1, curHp: item.hp, curMp: 0, items: '', stun:0, shield:0, id: Math.random() });
                 G.shop[i] = null;
                 checkEvo(); renderShop(); render(); updateUI();
                 return;
@@ -208,7 +214,7 @@
                 const f = groups[k][0];
                 G.units = G.units.filter(u => !groups[k].slice(0, 3).includes(u));
                 G.units.push({ ...CONFIG.TYPES[f.type], type: f.type, x: f.x, y: f.y, star: f.star+1, 
-                    hp: f.hp*2.4, atk: f.atk*2.1, curHp: f.hp*2.4, curMp: 0, items: f.items, stun:0, shield:0, id: Math.random() });
+                    hp: f.hp*2.5, atk: f.atk*2.2, curHp: f.hp*2.5, curMp: 0, items: f.items, stun:0, shield:0, id: Math.random() });
                 log("TIẾN HÓA CẤP SAO!");
                 checkEvo();
             }
@@ -250,19 +256,30 @@
 
     function render() {
         document.querySelectorAll('.unit').forEach(u => u.remove());
-        [...G.units, ...G.enemies].forEach(u => {
+        
+        // Vẽ quân mình
+        G.units.forEach(u => {
             const cell = document.getElementById(`cell-${u.x}-${u.y}`);
-            if (!cell) return;
-            const el = document.createElement('div');
-            el.className = `unit ${u.c} ${u.curMp >= u.mpM ? 'ult-ready' : ''}`;
-            el.draggable = !G.isCombat;
-            el.innerHTML = `<div class="unit-star">${'★'.repeat(u.star)}</div>${u.n}
-                <div class="hp-bar"><div class="hp-fill" style="width:${(u.curHp/u.hp)*100}%; ${u.shield > 0 ? 'background:white' : ''}"></div></div>
-                <div class="mp-bar"><div class="mp-fill" style="width:${(u.curMp/u.mpM)*100}%"></div></div>
-                <div class="items-icons">${u.items}</div>`;
-            el.ondragstart = e => e.dataTransfer.setData('uid', u.id);
-            cell.appendChild(el);
+            if (cell) cell.appendChild(createUnitEl(u, false));
         });
+
+        // Vẽ quân địch
+        G.enemies.forEach(e => {
+            const cell = document.getElementById(`cell-${e.x}-${e.y}`);
+            if (cell) cell.appendChild(createUnitEl(e, true));
+        });
+    }
+
+    function createUnitEl(u, isEnemy) {
+        const el = document.createElement('div');
+        el.className = `unit ${u.c} ${u.curMp >= u.mpM ? 'ult-ready' : ''} ${isEnemy ? 'enemy-unit' : ''}`;
+        el.draggable = !G.isCombat && !isEnemy;
+        el.innerHTML = `<div class="unit-star">${'★'.repeat(u.star)}</div>${u.n}
+            <div class="hp-bar"><div class="hp-fill" style="width:${(u.curHp/u.hp)*100}%; ${u.shield > 0 ? 'background:white' : ''}"></div></div>
+            <div class="mp-bar"><div class="mp-fill" style="width:${(u.curMp/u.mpM)*100}%"></div></div>
+            <div class="items-icons">${u.items}</div>`;
+        if(!isEnemy) el.ondragstart = e => e.dataTransfer.setData('uid', u.id);
+        return el;
     }
 
     async function startCombat() {
@@ -270,38 +287,45 @@
         G.isCombat = true;
         document.getElementById('fight-btn').disabled = true;
 
+        // BƯỚC 1: TẠO QUÂN ĐỊCH VÀ HIỆN RA
         G.enemies = [];
         const count = Math.min(G.round + 1, 10);
         for(let i=0; i<count; i++){
             const t = Object.keys(CONFIG.TYPES)[Math.floor(Math.random()*7)];
-            G.enemies.push({ ...CONFIG.TYPES[t], type: t, x: i%7, y: Math.floor(i/7), star: G.round > 5 ? 2 : 1, 
-                hp: CONFIG.TYPES[t].hp * (1+G.round*0.2), atk: CONFIG.TYPES[t].atk * (1+G.round*0.1), 
-                curHp: CONFIG.TYPES[t].hp * (1+G.round*0.2), curMp: 0, items: '', stun: 0, shield: 0, id: Math.random() });
+            G.enemies.push({ 
+                ...CONFIG.TYPES[t], type: t, 
+                x: i % 7, y: Math.floor(i / 7), 
+                star: G.round > 5 ? 2 : 1, 
+                hp: CONFIG.TYPES[t].hp * (1 + G.round * 0.25), 
+                atk: CONFIG.TYPES[t].atk * (1 + G.round * 0.15), 
+                curHp: CONFIG.TYPES[t].hp * (1 + G.round * 0.25), 
+                curMp: 0, items: '', stun: 0, shield: 0, id: Math.random() 
+            });
         }
-        render();
+        render(); // Gọi render để quân địch "rơi" xuống
+        await new Promise(r => setTimeout(r, 800)); // Chờ hiệu ứng rơi hoàn tất mới đánh
 
+        // BƯỚC 2: VÒNG LẶP CHIẾN ĐẤU
         while(G.units.filter(u=>u.y < 5).length > 0 && G.enemies.length > 0) {
             const syn = getSyn();
             
+            // Ta đánh
             G.units.filter(u=>u.y < 5).forEach(u => {
                 if (u.stun > 0) { u.stun--; return; }
                 const target = G.enemies[0]; if (!target) return;
-                
                 let d = u.atk * (syn.fire ? 1.4 : 1);
                 dealDmg(u, target, d);
                 if (syn.water) u.curHp = Math.min(u.hp, u.curHp + u.hp*0.05);
-                
                 u.curMp = Math.min(u.mpM, u.curMp + (syn.thunder ? 30 : 20));
                 if (u.curMp >= u.mpM) castSkill(u, G.enemies, G.units.filter(u=>u.y<5));
             });
 
+            // Địch đánh
             G.enemies.forEach(e => {
                 if (e.stun > 0) { e.stun--; return; }
                 const targets = G.units.filter(u=>u.y < 5); if (targets.length === 0) return;
                 const t = targets[Math.floor(Math.random()*targets.length)];
-                
-                let d = e.atk;
-                if (syn.earth) d *= 0.7;
+                let d = e.atk; if (syn.earth) d *= 0.7;
                 dealDmg(e, t, d);
                 e.curMp = Math.min(e.mpM, e.curMp + 20);
                 if (e.curMp >= e.mpM) castSkill(e, G.units.filter(u=>u.y<5), G.enemies);
@@ -310,7 +334,7 @@
             G.enemies = G.enemies.filter(e => e.curHp > 0);
             G.units = G.units.filter(u => u.y === 5 || u.curHp > 0);
             render();
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 600));
         }
         endCombat();
     }
@@ -318,10 +342,7 @@
     function getSyn() {
         const counts = {};
         G.units.filter(u=>u.y < 5).forEach(u => counts[u.type] = (counts[u.type] || 0) + 1);
-        return {
-            fire: counts.fire >= 3, water: counts.water >= 3,
-            earth: counts.earth >= 3, thunder: counts.thunder >= 2
-        };
+        return { fire: counts.fire >= 3, water: counts.water >= 3, earth: counts.earth >= 3, thunder: counts.thunder >= 2 };
     }
 
     function dealDmg(a, v, d) {
@@ -332,12 +353,12 @@
 
     function castSkill(u, enemies, allies) {
         u.curMp = 0;
-        if (u.type === 'fire') { enemies[0].curHp -= u.atk * 2; log("BỘC PHÁ!"); }
-        else if (u.type === 'water') { allies.forEach(a => a.curHp = Math.min(a.hp, a.curHp + 50)); log("HỒI XUÂN!"); }
+        if (u.type === 'fire') { enemies[0].curHp -= u.atk * 2.5; log("BỘC PHÁ!"); }
+        else if (u.type === 'water') { allies.forEach(a => a.curHp = Math.min(a.hp, a.curHp + 80)); log("HỒI XUÂN!"); }
         else if (u.type === 'earth') { u.shield = 2; log("THẠCH GIÁP!"); }
         else if (u.type === 'thunder') { enemies[0].stun = 2; log("TÊ LIỆT!"); }
-        else if (u.type === 'dark') { u.curHp = Math.min(u.hp, u.curHp + u.atk); log("MA HÚT!"); }
-        else { enemies[0].curHp -= u.atk; log("TẤN CÔNG!"); }
+        else if (u.type === 'dark') { u.curHp = Math.min(u.hp, u.curHp + u.atk * 1.5); log("MA HÚT!"); }
+        else { enemies[0].curHp -= u.atk * 1.2; log("TẤN CÔNG!"); }
     }
 
     function spawnVFX(u, t, c) {
@@ -361,7 +382,7 @@
             log(`THUA! Mất ${d} HP`);
         }
         G.units.forEach(u => { u.curHp = u.hp; u.curMp = 0; u.stun = 0; u.shield = 0; });
-        if (G.hp <= 0) { alert("GAME OVER!"); location.reload(); }
+        if (G.hp <= 0) { alert("GAME OVER! Bạn đạt vòng " + G.round); location.reload(); }
         updateUI(); rollShop(true); render();
     }
 
@@ -386,9 +407,4 @@
         }
     }
 
-    function log(m) { document.getElementById('msg-log').innerText = m; }
-
-    init();
-</script>
-</body>
-</html>
+    function l
