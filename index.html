@@ -1,135 +1,345 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<title>Ultimate Futsal Strategy Game</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Element Wars: Final Reckoning</title>
+    <style>
+        :root {
+            --bg: #05050a; --panel: #1a1a2e; --accent: #e94560;
+            --fire: #ff4757; --water: #2e86de; --earth: #2ed573;
+            --thunder: #f1c40f; --wind: #48dbfb; --dark: #5f27cd; --light: #f7f1e3;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+        
+        /* Dashboard */
+        .hud { display: flex; width: 100%; background: var(--panel); padding: 15px; justify-content: space-around; border-bottom: 3px solid var(--accent); position: sticky; top: 0; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .stat { font-size: 1.2rem; font-weight: bold; text-shadow: 2px 2px 4px #000; }
+        
+        /* Layout chính */
+        .main-container { display: flex; gap: 20px; padding: 20px; max-width: 1200px; }
+        
+        /* Synergy List */
+        .synergy-list { width: 220px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; }
+        .syn-node { margin-bottom: 12px; padding: 5px; border-radius: 5px; transition: 0.3s; opacity: 0.4; font-size: 0.85rem; border-left: 4px solid transparent; }
+        .syn-node.active { opacity: 1; background: rgba(255,255,255,0.1); border-left-color: var(--thunder); }
 
-<style>
-body{margin:0;background:#020617;color:#fff;font-family:Arial;text-align:center}
-h2{margin:10px}
-canvas{background:#16a34a;border:3px solid #fff;border-radius:12px}
-button{padding:8px 12px;margin:3px;border:none;border-radius:8px;font-weight:bold}
-#panel{margin:5px}
-#hud{font-size:16px}
-</style>
+        /* Board */
+        .board { display: grid; grid-template-columns: repeat(7, 80px); grid-template-rows: repeat(6, 80px); gap: 6px; background: #0f3460; padding: 10px; border-radius: 8px; box-shadow: inset 0 0 50px #000; }
+        .cell { width: 80px; height: 80px; background: rgba(255,255,255,0.03); border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; border: 1px solid rgba(255,255,255,0.05); }
+        .cell.enemy { background: rgba(233, 69, 96, 0.05); }
+        
+        /* Units */
+        .unit { width: 70px; height: 70px; border-radius: 15px; position: absolute; cursor: grab; transition: transform 0.2s, top 0.3s, left 0.3s; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold; border: 2px solid rgba(255,255,255,0.2); }
+        .unit:active { cursor: grabbing; z-index: 1000; }
+        .unit .hp-bar { width: 80%; height: 5px; background: #444; border-radius: 3px; margin-top: 5px; position: relative; }
+        .unit .hp-val { height: 100%; background: #2ecc71; width: 100%; transition: width 0.3s; }
+        .unit .mp-bar { width: 80%; height: 4px; background: #444; border-radius: 2px; margin-top: 2px; }
+        .unit .mp-val { height: 100%; background: #a29bfe; width: 0%; transition: width 0.3s; }
+        .unit-star { color: gold; position: absolute; top: 2px; font-size: 12px; }
+
+        /* Màu theo tộc */
+        .fire { background: linear-gradient(135deg, #ff4757, #ff6b81); box-shadow: 0 0 15px var(--fire); }
+        .water { background: linear-gradient(135deg, #2e86de, #54a0ff); box-shadow: 0 0 15px var(--water); }
+        .earth { background: linear-gradient(135deg, #2ed573, #7bed9f); box-shadow: 0 0 15px var(--earth); }
+        .thunder { background: linear-gradient(135deg, #f1c40f, #eccc68); box-shadow: 0 0 15px var(--thunder); }
+        .wind { background: linear-gradient(135deg, #48dbfb, #0abde3); box-shadow: 0 0 15px var(--wind); }
+        .dark { background: linear-gradient(135deg, #5f27cd, #341f97); box-shadow: 0 0 15px var(--dark); }
+        .light { background: linear-gradient(135deg, #f7f1e3, #d1ccc0); color: #333; box-shadow: 0 0 15px var(--light); }
+
+        /* Control Panel */
+        .controls { margin-top: 20px; display: flex; gap: 20px; align-items: flex-end; }
+        .shop { display: flex; gap: 10px; background: var(--panel); padding: 15px; border-radius: 15px; border: 2px solid #333; }
+        .shop-item { width: 110px; height: 150px; background: #0f3460; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 2px solid transparent; transition: 0.2s; position: relative; }
+        .shop-item:hover { border-color: var(--accent); transform: scale(1.05); }
+        .shop-item b { font-size: 0.9rem; margin-bottom: 5px; }
+        .shop-item span { font-size: 0.75rem; color: #ccc; text-align: center; padding: 0 5px; }
+        .price { color: #f1c40f; font-weight: bold; margin-top: 10px; }
+
+        .btn-group { display: flex; flex-direction: column; gap: 10px; }
+        .btn { padding: 12px 25px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; text-transform: uppercase; }
+        .btn-exp { background: #5f27cd; }
+        .btn-roll { background: #16213e; border: 1px solid #555; }
+        .btn-fight { background: var(--accent); font-size: 1.2rem; }
+        .btn:hover:not(:disabled) { filter: brightness(1.2); }
+        .btn:disabled { background: #333; cursor: not-allowed; }
+
+        #log { color: #aaa; font-style: italic; height: 25px; margin-bottom: 10px; }
+    </style>
 </head>
 <body>
 
-<h2>⚽ Ultimate Futsal Strategy Game</h2>
-<canvas id="game" width="360" height="600"></canvas>
-
-<div id="panel">
-  <button onclick="setTactic('attack')">🔥 Tấn công</button>
-  <button onclick="setTactic('balance')">⚖️ Cân bằng</button>
-  <button onclick="setTactic('defend')">🛡️ Phòng thủ</button>
+<div class="hud">
+    <div class="stat gold">💰 Vàng: <span id="gold">15</span>G</div>
+    <div class="stat hp">❤️ HP: <span id="hp">100</span></div>
+    <div class="stat level">⭐ Cấp: <span id="lvl">1</span> (<span id="cur-units">0</span>/<span id="max-units">1</span>)</div>
+    <div class="stat round">⚔️ Vòng: <span id="round">1</span></div>
+    <div class="stat streak" id="streak-info">🔥 Chuỗi: 0</div>
 </div>
 
-<div id="hud">
-  ⏱️ <span id="time">0</span>s |
-  🔴 <span id="myScore">0</span> -
-  <span id="aiScore">0</span> ⚪
+<div class="main-container">
+    <div class="synergy-list" id="synergies">
+        </div>
+
+    <div id="game-wrap">
+        <div id="log">Chào mừng đến với Element Wars: Final Reckoning!</div>
+        <div class="board" id="board"></div>
+
+        <div class="controls">
+            <div class="shop" id="shop"></div>
+            <div class="btn-group">
+                <button class="btn btn-exp" onclick="buyExp()">Lên Cấp (4G)</button>
+                <button class="btn btn-roll" onclick="refreshShop()">Làm mới (2G)</button>
+                <button class="btn btn-fight" id="fight-btn" onclick="startCombat()">BẮT ĐẦU CHIẾN ĐẤU</button>
+            </div>
+        </div>
+    </div>
 </div>
+
 <script>
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
+    const DATA = {
+        TYPES: {
+            fire: { n: 'Hỏa', c: 'fire', hp: 100, atk: 35, mpMax: 100, desc: 'Nổ diện rộng' },
+            water: { n: 'Thủy', c: 'water', hp: 160, atk: 15, mpMax: 80, desc: 'Đóng băng' },
+            earth: { n: 'Thổ', c: 'earth', hp: 280, atk: 12, mpMax: 120, desc: 'Khiên phản đam' },
+            thunder: { n: 'Lôi', c: 'thunder', hp: 90, atk: 25, mpMax: 60, desc: 'Giật sét chuỗi' },
+            wind: { n: 'Phong', c: 'wind', hp: 110, atk: 20, mpMax: 100, desc: 'Né tránh' },
+            dark: { n: 'Ám', c: 'dark', hp: 130, atk: 30, mpMax: 100, desc: 'Hút máu' },
+            light: { n: 'Quang', c: 'light', hp: 120, atk: 18, mpMax: 150, desc: 'Hồi sinh/Buff' }
+        },
+        SYNERGIES: {
+            fire: { req: 3, bonus: 'Toàn đội +40% Công' },
+            water: { req: 3, bonus: 'Hồi 8% máu mỗi giây' },
+            earth: { req: 3, bonus: 'Toàn đội +50 Giáp' },
+            thunder: { req: 2, bonus: 'Tăng 50% Tốc đánh' },
+            wind: { req: 2, bonus: '30% cơ hội né đòn' },
+            dark: { req: 2, bonus: 'Hút 40% sát thương' },
+            light: { req: 2, bonus: 'Nhận 1 lá chắn khởi đầu' }
+        }
+    };
 
-let tactic="balance";
-let myScore=0, aiScore=0;
-let matchTime=0, half=1;
+    let G = {
+        gold: 15, hp: 100, lvl: 1, exp: 0, round: 1, streak: 0,
+        units: [], enemies: [], isCombat: false,
+        maxUnits: () => G.lvl
+    };
 
-const ball={x:180,y:300,vx:0,vy:0,r:6};
-const team=[], enemy=[];
-    for(let i=0;i<5;i++){
- team.push({x:70,y:120+i*80,r:8,speed:0.7,level:1});
- enemy.push({x:290,y:120+i*80,r:8,speed:0.6});
-}
+    function initBoard() {
+        const board = document.getElementById('board');
+        board.innerHTML = '';
+        for (let y = 0; y < 6; y++) {
+            for (let x = 0; x < 7; x++) {
+                const cell = document.createElement('div');
+                cell.className = `cell ${y < 3 ? 'enemy' : ''}`;
+                cell.id = `cell-${x}-${y}`;
+                cell.ondragover = e => e.preventDefault();
+                cell.ondrop = e => handleDrop(e, x, y);
+                board.appendChild(cell);
+            }
+        }
+    }
 
-function drawField(){
- ctx.fillStyle="#16a34a";
- ctx.fillRect(0,0,360,600);
- ctx.strokeStyle="#fff";
- ctx.strokeRect(10,10,340,580);
- ctx.strokeRect(0,240,10,120);
- ctx.strokeRect(350,240,10,120);
-}
-    let dragging=null;
+    function renderShop() {
+        const shop = document.getElementById('shop');
+        shop.innerHTML = '';
+        const keys = Object.keys(DATA.TYPES);
+        for (let i = 0; i < 5; i++) {
+            const type = keys[Math.floor(Math.random() * keys.length)];
+            const d = DATA.TYPES[type];
+            const item = document.createElement('div');
+            item.className = 'shop-item';
+            item.innerHTML = `<b>${d.n}</b><span>${d.desc}</span><div class="price">3G</div>`;
+            item.onclick = () => buyUnit(type);
+            shop.appendChild(item);
+        }
+    }
 
-canvas.addEventListener("touchstart",e=>{
- const t=e.touches[0];
- const x=t.clientX-canvas.offsetLeft;
- const y=t.clientY-canvas.offsetTop;
- team.forEach(p=>{
-  if(Math.hypot(p.x-x,p.y-y)<p.r+10) dragging=p;
- });
- ball.vx=(x-ball.x)*0.04;
- ball.vy=(y-ball.y)*0.04;
-});
+    function buyUnit(type) {
+        if (G.gold < 3 || G.isCombat) return;
+        // Tìm ô trống hàng chờ (hàng 5)
+        for (let x = 0; x < 7; x++) {
+            if (!G.units.find(u => u.x === x && u.y === 5)) {
+                G.gold -= 3;
+                const unit = { ...DATA.TYPES[type], type, x, y: 5, star: 1, curHp: DATA.TYPES[type].hp, mp: 0, id: Math.random() };
+                G.units.push(unit);
+                checkUpgrade();
+                render();
+                updateUI();
+                return;
+            }
+        }
+        msg("Hàng chờ đã đầy!");
+    }
 
-canvas.addEventListener("touchmove",e=>{
- if(!dragging) return;
- const t=e.touches[0];
- dragging.x=t.clientX-canvas.offsetLeft;
- dragging.y=t.clientY-canvas.offsetTop;
-});
+    function checkUpgrade() {
+        const groups = {};
+        G.units.forEach(u => {
+            const k = `${u.type}_${u.star}`;
+            groups[k] = (groups[k] || []);
+            groups[k].push(u);
+        });
+        for (let k in groups) {
+            if (groups[k].length >= 3) {
+                const first = groups[k][0];
+                G.units = G.units.filter(u => !groups[k].slice(0, 3).includes(u));
+                G.units.push({
+                    ...DATA.TYPES[first.type], type: first.type, x: first.x, y: first.y, star: first.star + 1,
+                    hp: first.hp * 2.4, atk: first.atk * 2.1, curHp: first.hp * 2.4, mp: 0, id: Math.random()
+                });
+                msg("CẤP SAO MỚI! Sức mạnh vượt trội.");
+                checkUpgrade();
+            }
+        }
+    }
 
-canvas.addEventListener("touchend",()=>dragging=null);
-    function setTactic(t){tactic=t}
+    function buyExp() {
+        if (G.gold >= 4 && G.lvl < 8) { G.gold -= 4; G.exp += 4; if (G.exp >= G.lvl * 4) { G.exp = 0; G.lvl++; } updateUI(); }
+    }
 
-function teamAI(p){
- if(tactic==="attack") p.x+=0.4;
- if(tactic==="defend") p.x-=0.4;
-}
+    function refreshShop() { if (G.gold >= 2 && !G.isCombat) { G.gold -= 2; renderShop(); updateUI(); } }
 
-function enemyAI(p){
- if(ball.x<p.x) p.x-=p.speed;
- if(ball.x>p.x) p.x+=p.speed;
- if(ball.y<p.y) p.y-=p.speed;
- if(ball.y>p.y) p.y+=p.speed;
-}
-    function checkGoal(){
- if(ball.x<0&&ball.y>240&&ball.y<360){aiScore++;resetBall()}
- if(ball.x>360&&ball.y>240&&ball.y<360){myScore++;resetBall()}
- document.getElementById("myScore").innerText=myScore;
- document.getElementById("aiScore").innerText=aiScore;
-}
+    function handleDrop(e, x, y) {
+        const id = e.dataTransfer.getData('uid');
+        const unit = G.units.find(u => u.id == id);
+        if (unit) {
+            // Kiểm tra số quân trên bàn (y < 5)
+            const unitsOnBoard = G.units.filter(u => u.y < 5).length;
+            if (y < 5 && unit.y === 5 && unitsOnBoard >= G.maxUnits()) {
+                msg("Vượt quá giới hạn quân số!");
+                return;
+            }
+            if (y >= 3) { unit.x = x; unit.y = y; render(); updateUI(); }
+        }
+    }
 
-function resetBall(){ball.x=180;ball.y=300;ball.vx=ball.vy=0}
+    function render() {
+        document.querySelectorAll('.unit').forEach(u => u.remove());
+        [...G.units, ...G.enemies].forEach(u => {
+            const cell = document.getElementById(`cell-${u.x}-${u.y}`);
+            if (!cell) return;
+            const el = document.createElement('div');
+            el.className = `unit ${u.c}`;
+            el.draggable = !G.isCombat;
+            el.innerHTML = `<div class="unit-star">${'★'.repeat(u.star)}</div>${u.n}
+                <div class="hp-bar"><div class="hp-val" style="width:${(u.curHp/u.hp)*100}%"></div></div>
+                <div class="mp-bar"><div class="mp-val" style="width:${(u.mp/u.mpMax)*100}%"></div></div>`;
+            el.ondragstart = e => e.dataTransfer.setData('uid', u.id);
+            cell.appendChild(el);
+        });
+    }
 
-setInterval(()=>{
- matchTime++;
- document.getElementById("time").innerText=matchTime;
-},1000);
-    function saveGame(){
- localStorage.setItem("futsalSave",JSON.stringify({myScore,aiScore}));
-}
-function loadGame(){
- const d=JSON.parse(localStorage.getItem("futsalSave"));
- if(d){myScore=d.myScore;aiScore=d.aiScore}
-}
-loadGame();
-    function drawPlayers(){
- team.forEach(p=>{ctx.fillStyle="red";ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();teamAI(p)});
- enemy.forEach(p=>{ctx.fillStyle="white";ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();enemyAI(p)});
-}
+    function updateUI() {
+        document.getElementById('gold').innerText = G.gold;
+        document.getElementById('hp').innerText = G.hp;
+        document.getElementById('lvl').innerText = G.lvl;
+        document.getElementById('round').innerText = G.round;
+        document.getElementById('cur-units').innerText = G.units.filter(u => u.y < 5).length;
+        document.getElementById('max-units').innerText = G.maxUnits();
+        
+        const synBox = document.getElementById('synergies');
+        synBox.innerHTML = '';
+        const counts = {};
+        G.units.filter(u => u.y < 5).forEach(u => counts[u.type] = (counts[u.type] || 0) + 1);
+        
+        for (let s in DATA.SYNERGIES) {
+            const data = DATA.SYNERGIES[s];
+            const active = (counts[s] || 0) >= data.req;
+            synBox.innerHTML += `<div class="syn-node ${active ? 'active' : ''}">
+                <b>${DATA.TYPES[s].n} (${counts[s] || 0}/${data.req})</b><br>${data.bonus}
+            </div>`;
+        }
+    }
 
-function drawBall(){
- ctx.fillStyle="yellow";
- ctx.beginPath();
- ctx.arc(ball.x,ball.y,ball.r,0,7);
- ctx.fill();
- ball.x+=ball.vx; ball.y+=ball.vy;
- ball.vx*=0.98; ball.vy*=0.98;
-}
+    async function startCombat() {
+        if (G.isCombat || G.units.filter(u => u.y < 5).length === 0) return;
+        G.isCombat = true;
+        document.getElementById('fight-btn').disabled = true;
 
-function loop(){
- drawField();
- drawPlayers();
- drawBall();
- checkGoal();
- requestAnimationFrame(loop);
-}
-loop();
+        // Tạo kẻ địch theo round (AI đơn giản)
+        G.enemies = [];
+        for (let i = 0; i < Math.min(G.round + 1, 10); i++) {
+            const type = Object.keys(DATA.TYPES)[Math.floor(Math.random()*7)];
+            G.enemies.push({
+                ...DATA.TYPES[type], type, x: i % 7, y: Math.floor(i / 7),
+                star: G.round > 5 ? 2 : 1, curHp: DATA.TYPES[type].hp * (1 + G.round*0.25),
+                atk: DATA.TYPES[type].atk * (1 + G.round*0.15), mp: 0, id: Math.random()
+            });
+        }
+        render();
+
+        while (G.units.filter(u => u.y < 5).length > 0 && G.enemies.length > 0) {
+            // Tính toán Synergy Active
+            const counts = {};
+            G.units.filter(u => u.y < 5).forEach(u => counts[u.type] = (counts[u.type] || 0) + 1);
+            
+            // Player Attack
+            G.units.filter(u => u.y < 5).forEach(u => {
+                const target = G.enemies[0];
+                if (!target) return;
+                
+                let dmg = u.atk;
+                if (counts.fire >= 3) dmg *= 1.4;
+                if (counts.dark >= 2) u.curHp = Math.min(u.hp, u.curHp + dmg * 0.4);
+                
+                target.curHp -= dmg;
+                u.mp = Math.min(u.mpMax, u.mp + 20);
+                if (u.mp >= u.mpMax) { // Kỹ năng đặc biệt
+                    target.curHp -= dmg * 2;
+                    u.mp = 0;
+                    msg(`${u.n} tung TUYỆT CHIÊU!`);
+                }
+            });
+
+            G.enemies = G.enemies.filter(e => e.curHp > 0);
+
+            // Enemy Attack
+            G.enemies.forEach(e => {
+                const targets = G.units.filter(u => u.y < 5);
+                if (targets.length === 0) return;
+                const target = targets[Math.floor(Math.random()*targets.length)];
+                
+                let finalDmg = e.atk;
+                if (counts.earth >= 3) finalDmg = Math.max(1, finalDmg - 20);
+                if (counts.wind >= 2 && Math.random() < 0.3) finalDmg = 0;
+                
+                target.curHp -= finalDmg;
+                target.mp = Math.min(target.mpMax, target.mp + 10); // Mana khi bị đánh
+            });
+
+            G.units = G.units.filter(u => u.y >= 5 || u.curHp > 0);
+            render();
+            await new Promise(r => setTimeout(r, 400));
+        }
+        endCombat();
+    }
+
+    function endCombat() {
+        G.isCombat = false;
+        document.getElementById('fight-btn').disabled = false;
+        if (G.units.filter(u => u.y < 5).length > 0) {
+            msg("CHIẾN THẮNG! Vàng nhận được: 6 + Lợi tức");
+            G.gold += 6 + Math.floor(G.gold * 0.1);
+            G.round++;
+            G.streak = Math.max(1, G.streak + 1);
+        } else {
+            msg("THẤT BẠI! Bạn mất HP.");
+            G.hp -= 10 + G.round;
+            G.streak = Math.min(-1, G.streak - 1);
+        }
+        
+        G.units.forEach(u => { u.curHp = u.hp; u.mp = 0; });
+        if (G.hp <= 0) { alert("TRÒ CHƠI KẾT THÚC! Vòng đạt được: " + G.round); location.reload(); }
+        
+        renderShop();
+        render();
+        updateUI();
+        document.getElementById('streak-info').innerText = "🔥 Chuỗi: " + G.streak;
+    }
+
+    function msg(m) { document.getElementById('log').innerText = m; }
+
+    initBoard();
+    renderShop();
+    updateUI();
 </script>
 </body>
 </html>
